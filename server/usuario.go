@@ -16,8 +16,9 @@ import (
 func usuarioCmd(app core.App) *cobra.Command {
 	var slug, nombre, email, color string
 	cmd := &cobra.Command{
-		Use:   "usuario",
-		Short: "Crea o actualiza una cuenta (contraseña en EPE_PASSWORD)",
+		Use:          "usuario",
+		Short:        "Crea o actualiza una cuenta (contraseña en EPE_PASSWORD)",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if slug == "" || nombre == "" || email == "" {
 				return errors.New("faltan --slug, --nombre o --email")

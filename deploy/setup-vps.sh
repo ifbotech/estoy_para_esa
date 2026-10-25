@@ -144,7 +144,10 @@ if [ "$(preguntar '¿Crear o actualizar las cuentas ahora? [S/n] ')" != "n" ]; t
     local slug="$1" nombre="$2" email_def="$3" color="$4" email clave
     email="$(preguntar "Email de $nombre [$email_def]: ")"; email="${email:-$email_def}"
     clave="$(preguntar_oculto "Contraseña de $nombre (Enter = no cambiarla): ")"
-    EPE_PASSWORD="$clave" pb usuario --slug "$slug" --nombre "$nombre" --email "$email" --color "$color"
+    until EPE_PASSWORD="$clave" pb usuario --slug "$slug" --nombre "$nombre" --email "$email" --color "$color"; do
+      amarillo "No se pudo guardar la cuenta de $nombre (la contraseña necesita 3 caracteres o más). Probá de nuevo."
+      clave="$(preguntar_oculto "Contraseña de $nombre (Enter = no cambiarla): ")"
+    done
   }
   cuenta inaki "Iñaki" "ifbarnetche@gmail.com" "#ff4fa3"
   cuenta rocio "Rocío" "rocio@estoyparaesa.app" "#c6ff3d"
