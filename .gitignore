@@ -1,0 +1,6 @@
+node_modules/
+dist/
+pb/pb_data/
+*.log
+.DS_Store
+server/estoyparaesa

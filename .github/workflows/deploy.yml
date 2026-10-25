@@ -1,0 +1,164 @@
+# Prueba todo en cada push y PR; lo que llega a main se publica en
+# https://ifbotech.com/estoyparaesa/
+#
+# En el VPS cada publicación es una carpeta nueva en releases/ y `current`
+# apunta a la última: si la nueva no arranca, vuelve sola a la anterior.
+
+name: Probar y publicar
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  APP_DIR: /var/www/estoyparaesa
+
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: App web (tipos, tests y build)
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Servidor (vet y build para el VPS)
+        working-directory: server
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          go vet ./...
+          go build -trimpath -ldflags "-s -w" -o ../estoyparaesa .
+
+      - name: Migraciones y hooks arrancan
+        run: |
+          mkdir -p /tmp/pbprueba
+          ./estoyparaesa serve --http 127.0.0.1:8095 --dir /tmp/pbprueba \
+            --migrationsDir pb/pb_migrations --hooksDir pb/pb_hooks --publicDir dist &
+          PB=$!
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8095/api/epe/salud && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8095/api/epe/salud
+          curl -fsS http://127.0.0.1:8095/ | grep -q "Estoy para esa"
+          kill $PB
+
+      - name: Paquete
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          mkdir -p paquete/bin
+          cp estoyparaesa paquete/bin/
+          cp -r dist paquete/pb_public
+          cp -r pb/pb_migrations paquete/pb_migrations
+          cp -r pb/pb_hooks paquete/pb_hooks
+          node -p "require('./web/src/versiones.json')[0].id" > paquete/VERSION
+          echo "${GITHUB_SHA}" > paquete/COMMIT
+          tar -C paquete -czf paquete.tgz .
+
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          name: paquete
+          path: paquete.tgz
+          retention-days: 7
+
+  publicar:
+    needs: probar
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: produccion
+      url: https://ifbotech.com/estoyparaesa/
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: paquete
+
+      - name: Llave SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Subir y activar
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          RELEASE="$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
+          ssh "$VPS_USER@$VPS_HOST" "mkdir -p $APP_DIR/releases/$RELEASE && tar -xzf - -C $APP_DIR/releases/$RELEASE" < paquete.tgz
+          ssh "$VPS_USER@$VPS_HOST" "APP_DIR=$APP_DIR RELEASE=$RELEASE bash -s" <<'REMOTO'
+          set -euo pipefail
+          cd "$APP_DIR"
+          R="releases/$RELEASE"
+          VERSION="$(cat "$R/VERSION")"
+          mkdir -p archivo pb_data
+
+          # El archivo de versiones: esta versión queda en archivo/<id>/ y
+          # cada release ve todas las anteriores por el enlace.
+          rm -rf "archivo/$VERSION.tmp"
+          cp -r "$R/pb_public" "archivo/$VERSION.tmp"
+          rm -rf "archivo/$VERSION"
+          mv "archivo/$VERSION.tmp" "archivo/$VERSION"
+          ln -sfn "$APP_DIR/archivo" "$R/pb_public/archivo"
+          chmod +x "$R/bin/estoyparaesa"
+
+          ANTERIOR="$(readlink current || true)"
+          ln -sfn "$R" current.tmp && mv -T current.tmp current
+          echo "publicado $RELEASE (versión $VERSION)"
+
+          if ! sudo -n /usr/bin/systemctl restart estoyparaesa 2>/dev/null; then
+            echo "::warning::El servicio todavía no está instalado en el VPS: corré deploy/setup-vps.sh como root (ver docs/despliegue.md). Los archivos ya quedaron subidos."
+            exit 0
+          fi
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8095/api/epe/salud >/dev/null; then
+              echo "el servicio responde"
+              ls -1dt releases/* | tail -n +6 | xargs -r rm -rf
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "::error::La versión nueva no arrancó: vuelvo a la anterior."
+          if [ -n "$ANTERIOR" ]; then
+            ln -sfn "$ANTERIOR" current.tmp && mv -T current.tmp current
+            sudo -n /usr/bin/systemctl restart estoyparaesa || true
+          fi
+          exit 1
+          REMOTO
+
+      - name: Verificar desde afuera
+        run: |
+          for i in $(seq 1 10); do
+            if curl -fsS https://ifbotech.com/estoyparaesa/api/epe/salud; then exit 0; fi
+            sleep 3
+          done
+          echo "::warning::https://ifbotech.com/estoyparaesa/ todavía no responde (¿falta configurar Caddy con deploy/setup-vps.sh?)"

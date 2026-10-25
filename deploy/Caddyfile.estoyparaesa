@@ -1,0 +1,14 @@
+# El bloque que deploy/setup-vps.sh agrega al Caddyfile del VPS, dentro de
+# `ifbotech.com, www.ifbotech.com { ... }` y ANTES del `handle { ... }` final
+# que manda todo a la app principal (`handle` es excluyente).
+#
+# handle_path saca el /estoyparaesa: PocketBase sirve la app en / y la API en
+# /api. La app usa rutas relativas, así que no se entera de la carpeta.
+
+	# Estoy para esa (github.com/ifbotech/estoy_para_esa)
+	redir /estoyparaesa /estoyparaesa/ 308
+	handle_path /estoyparaesa/* {
+		reverse_proxy 127.0.0.1:8095
+	}
+
+# Después: caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy
