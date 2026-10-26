@@ -1,14 +1,15 @@
 import { animate, motion, useMotionValue, useTransform } from "motion/react"
 import { useRef } from "react"
 import { abrirVistaRapida, estoyParaEsa, moverEstado } from "../acciones"
-import type { Rankeado } from "../calculos"
+import { aCiegas, type Rankeado } from "../calculos"
 import { urlArchivo } from "../pb"
 import { ir } from "../router"
-import { useStore } from "../store"
+import { useStore, useYo } from "../store"
 import { ESTADOS, type Categoria, type Plan, type Usuario } from "../tipos"
 import { Arte } from "./Arte"
+import { EtiquetaSimetria } from "./Deco"
 
-const DEFECTO = ["#E8432E", "#F2EA3A"]
+const DEFECTO = ["#E4572E", "#F5D547"]
 
 export function colorDe(u: Usuario | undefined, i: number) {
   return u?.color || DEFECTO[i % 2]
@@ -30,9 +31,55 @@ export function useCategoria(id: string): Categoria | undefined {
 export function ChipCategoria({ cat }: { cat?: Categoria }) {
   if (!cat) return null
   return (
-    <span className="chip-cat" style={{ "--cc": cat.color || "var(--a3)" } as React.CSSProperties}>
+    <span className="chip-cat" style={{ "--cc": cat.color || "var(--amarillo)" } as React.CSSProperties}>
       {cat.emoji} {cat.nombre}
     </span>
+  )
+}
+
+/** Las dos barritas de ganas de una fila. Si votás a ciegas, la del otro va rayada. */
+export function MiniBarras({ r }: { r: Rankeado }) {
+  const usuarios = useStore((s) => s.usuarios)
+  const yo = useYo()
+  const ciego = aCiegas(r.votos, yo?.id)
+  return (
+    <div className="mini-barras">
+      {usuarios.map((u, k) => {
+        const v = r.votos.find((x) => x.usuario === u.id)
+        const tapada = ciego && u.id !== yo?.id
+        return (
+          <div key={u.id} className={`mini-barra ${tapada ? "tapada" : ""}`} title={`${u.name}: ${tapada ? "tapado hasta que votes" : v ? v.ganas + "%" : "sin votar"}`}>
+            <span className="mini-inicial" style={{ background: colorDe(u, k) }}>
+              {u.name.slice(0, 1)}
+            </span>
+            <span className="mini-pista">
+              {!tapada && <span className="mini-relleno" style={{ width: `${v?.ganas ?? 0}%`, background: colorDe(u, k) }} />}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** El número de la derecha: el promedio, o «¿?» si todavía no votaste o nadie votó. */
+export function PromedioFila({ r }: { r: Rankeado }) {
+  const yo = useYo()
+  const ciego = aCiegas(r.votos, yo?.id)
+  return (
+    <div className="fila-prom">
+      {r.promedio === null || ciego ? (
+        <>
+          <b className="num">¿?</b>
+          <small>{ciego ? "votá" : "ganas"}</small>
+        </>
+      ) : (
+        <>
+          <b className="num">{Math.round(r.promedio)}</b>
+          <small>ganas</small>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -88,42 +135,38 @@ export function useGestosPlan(planId: string) {
 }
 
 /**
- * Tarjeta de la lista: puesto, personaje o imagen, título, las dos barras y el
- * promedio. Deslizar a la derecha la pasa al estado siguiente; a la izquierda,
- * al anterior.
+ * La fila técnica de un plan: puesto, categoría, título, las dos barras, el
+ * promedio y la etiqueta de simetría. Deslizar a la derecha la pasa al
+ * estado siguiente; a la izquierda, al anterior.
  */
-export function TarjetaPlan({ r, puesto }: { r: Rankeado; puesto?: number }) {
+export function TarjetaPlan({ r, puesto, compacta = false }: { r: Rankeado; puesto?: number; compacta?: boolean }) {
   const cat = useCategoria(r.plan.categoria)
-  const usuarios = useStore((s) => s.usuarios)
+  const yo = useYo()
   const img = imagenDe(r.plan, "200x200")
   const x = useMotionValue(0)
-  const fondoPista = useTransform(x, [-120, 0, 120], ["var(--chicle)", "var(--bg)", "var(--a2)"])
+  const fondoPista = useTransform(x, [-120, 0, 120], ["var(--rosa)", "var(--papel)", "var(--verde)"])
   const gestos = useGestosPlan(r.plan.id)
   const i = ESTADOS.findIndex((e) => e.id === r.plan.estado)
   const siguiente = ESTADOS[i + 1]
   const anterior = ESTADOS[i - 1]
   const arrastrado = useRef(false)
+  const ciego = aCiegas(r.votos, yo?.id)
 
   return (
-    <motion.div
-      layout
-      className="tarjeta-envoltorio"
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-    >
-      <motion.div className="tarjeta-pista" style={{ background: fondoPista }} aria-hidden>
-        <span>{anterior ? `← ${anterior.nombre}` : ""}</span>
-        <span>{siguiente ? `${siguiente.nombre} →` : ""}</span>
-      </motion.div>
+    <div className={`tarjeta-envoltorio ${compacta ? "compacta" : ""}`}>
+      {!compacta && (
+        <motion.div className="tarjeta-pista" style={{ background: fondoPista }} aria-hidden>
+          <span>{anterior ? `← ${anterior.nombre}` : ""}</span>
+          <span>{siguiente ? `${siguiente.nombre} →` : ""}</span>
+        </motion.div>
+      )}
       <motion.div
         role="link"
         tabIndex={0}
-        aria-label={`${r.plan.titulo}. Doble toque: estoy para esa. Deslizá para cambiar el estado.`}
+        aria-label={`${r.plan.titulo}. Doble toque: estoy para esa.${compacta ? "" : " Deslizá para cambiar el estado."}`}
         className="tarjeta"
-        style={{ x, "--cc": cat?.color || "var(--a3)" } as never}
-        drag="x"
+        style={{ x, "--cc": cat?.color || "var(--amarillo)" } as never}
+        drag={compacta ? false : "x"}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.55}
         dragDirectionLock
@@ -131,7 +174,7 @@ export function TarjetaPlan({ r, puesto }: { r: Rankeado; puesto?: number }) {
         onDragEnd={(_, info) => {
           if (info.offset.x > 110) moverEstado(r.plan, 1)
           else if (info.offset.x < -110) moverEstado(r.plan, -1)
-          animate(x, 0, { type: "spring", stiffness: 500, damping: 35 })
+          animate(x, 0, { type: "spring", stiffness: 600, damping: 40 })
           setTimeout(() => (arrastrado.current = false), 50)
         }}
         onPointerDown={gestos.onPointerDown}
@@ -144,48 +187,21 @@ export function TarjetaPlan({ r, puesto }: { r: Rankeado; puesto?: number }) {
           gestos.tocar(e, () => ir(`/plan/${r.plan.id}`))
         }}
         onKeyDown={(e) => e.key === "Enter" && ir(`/plan/${r.plan.id}`)}
-        whileTap={{ scale: 0.98 }}
       >
-        {puesto !== undefined && <span className="tarjeta-puesto">#{puesto}</span>}
+        {puesto !== undefined && <span className="tarjeta-puesto num">{String(puesto).padStart(2, "0")}</span>}
         <div className="tarjeta-img">
-          {img ? <img src={img} alt="" loading="lazy" draggable={false} /> : <Arte tipo={cat?.personalidad ?? "salida"} tam={9} />}
+          {img ? <img src={img} alt="" loading="lazy" draggable={false} /> : <Arte tipo={cat?.personalidad ?? "salida"} tam={8} />}
         </div>
         <div className="tarjeta-cuerpo">
-          <ChipCategoria cat={cat} />
-          <h3>{r.plan.titulo}</h3>
-          <div className="mini-barras">
-            {usuarios.map((u, k) => {
-              const v = r.votos.find((x) => x.usuario === u.id)
-              return (
-                <div key={u.id} className="mini-barra" title={`${u.name}: ${v ? v.ganas + "%" : "sin votar"}`}>
-                  <span className="mini-inicial" style={{ background: colorDe(u, k) }}>
-                    {u.name.slice(0, 1)}
-                  </span>
-                  <span className="mini-pista">
-                    <motion.span
-                      className="mini-relleno"
-                      style={{ background: colorDe(u, k) }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${v?.ganas ?? 0}%` }}
-                      transition={{ type: "spring", stiffness: 90, damping: 16 }}
-                    />
-                  </span>
-                </div>
-              )
-            })}
+          <div className="tarjeta-meta">
+            <ChipCategoria cat={cat} />
+            {!ciego && <EtiquetaSimetria votos={r.votos} chica />}
           </div>
+          <h3>{r.plan.titulo}</h3>
+          <MiniBarras r={r} />
         </div>
-        <div className="tarjeta-prom">
-          {r.promedio === null ? (
-            <span className="tarjeta-sin">¿?</span>
-          ) : (
-            <>
-              <b>{Math.round(r.promedio)}</b>
-              <small>ganas</small>
-            </>
-          )}
-        </div>
+        <PromedioFila r={r} />
       </motion.div>
-    </motion.div>
+    </div>
   )
 }

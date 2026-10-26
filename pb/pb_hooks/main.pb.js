@@ -60,14 +60,14 @@ onRecordUpdate((e) => {
 
 onRecordCreateRequest((e) => {
   e.next()
-  require(`${__hooks}/votos.js`).avisar(e, 0, 0)
+  require(`${__hooks}/votos.js`).avisar(e, 0, 0, true)
 }, "votos")
 
 onRecordUpdateRequest((e) => {
   const ganasAntes = e.record.original().getFloat("ganas")
   const puntajeAntes = e.record.original().getFloat("puntaje")
   e.next()
-  require(`${__hooks}/votos.js`).avisar(e, ganasAntes, puntajeAntes)
+  require(`${__hooks}/votos.js`).avisar(e, ganasAntes, puntajeAntes, false)
 }, "votos")
 
 // --- temas: número de versión y un solo tema activo ------------------------
@@ -133,9 +133,12 @@ routerAdd("GET", "/api/epe/preview", (e) => {
     descripcion: u.meta(html, "og:description") || u.meta(html, "description"),
     imagen: u.meta(html, "og:image") || u.meta(html, "twitter:image"),
     sitio: u.meta(html, "og:site_name"),
-    // Letterboxd pone el director acá.
+    // Letterboxd pone el director acá…
     extra: u.meta(html, "twitter:data1"),
     extraEtiqueta: u.meta(html, "twitter:label1"),
+    // …y el promedio («3.92 out of 5») acá.
+    extra2: u.meta(html, "twitter:data2"),
+    extra2Etiqueta: u.meta(html, "twitter:label2"),
   })
 }, $apis.requireAuth())
 

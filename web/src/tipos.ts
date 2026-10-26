@@ -35,6 +35,8 @@ export interface Datos {
   anio?: string
   director?: string
   dondeVer?: string
+  /** Promedio de Letterboxd (0 a 5), leído del link de la peli. */
+  lbPromedio?: number
   // lugares (comida, café, salidas)
   maps?: string
   direccion?: string
@@ -82,37 +84,8 @@ export interface Item extends Base {
   hecho: boolean
   orden: number
   dia: number
-}
-
-export type FuenteKey = "bricolage" | "lilita" | "fraunces" | "dmsans" | "spacemono"
-
-export interface Tokens {
-  /** 2 = tema de la v2 («Papel Pop»). Los de la v1 no lo tienen. */
-  v?: number
-  modo: "oscuro" | "claro"
-  bg: string
-  bg2: string
-  superficie: string
-  tinta: string
-  suave: string
-  a1: string
-  a2: string
-  a3: string
-  a4: string
-  radio: number
-  display: FuenteKey
-  cuerpo: FuenteKey
-  grano: number
-  movimiento: number
-}
-
-export interface Tema extends Base {
-  nombre: string
-  version: number
-  tokens: Tokens
-  nota: string
-  activo: boolean
-  creado_por: string
+  /** En «Qué pedir», después de ir: ¿lo repetirían? */
+  veredicto: "" | "repetir" | "pasar"
 }
 
 export const ESTADOS: { id: Estado; nombre: string; emoji: string }[] = [

@@ -9,22 +9,25 @@ de fin de año.
 **https://ifbotech.com/estoyparaesa/**: se instala en el inicio del teléfono
 (Safari → Compartir → Agregar a inicio).
 
-## Qué hay
+## Qué hay (v3 · «Brutalismo editorial»)
 
 | | |
 |---|---|
-| **Hoy** | Título que salta, dibujos hechos con CSS que se revolean con el dedo, cintas que corren, el top de ganas, la tragamonedas «Sorpréndanme», lo agendado, las categorías y el último recuerdo. |
-| **Planes** | Ordenados por el promedio de ganas, filtrables por estado (Idea, Agendado, En curso, Hecho), categoría y búsqueda. |
-| **Cada plan** | La personalidad visual de su categoría, los cuatro estados, las dos barras de ganas, el puntaje cuando está hecho, notas, link y fotos. |
-| **Pelis** 🎬 | Letterboxd: pegás el link y trae póster, año y dirección. Se puede importar el diario de Letterboxd. |
-| **Comida, café y salidas** ☕ | Google Maps (mapa embebido), Instagram, barrio y «qué pedir». |
-| **Viajes** ✈️ | Boleto con destino, país, fechas y si es al exterior, mapa, itinerario por día y valija. |
-| **DIY** 🔨 | Pasos con progreso, materiales y el antes y después deslizable. |
-| **Recuerdos** | Línea de tiempo de polaroids con todo lo hecho. |
-| **Wrapped** | Historias animadas del año: total, categoría top, mes más intenso, pelis, % de viajes al exterior, lugares, quién es más manija, el plan que los dividió, rachas… |
-| **Más** | Editor de tema (colores, letras, grano, movimiento; cada versión queda guardada), **Archivo** de versiones de la app y de los temas, categorías propias, Letterboxd, avisos push. |
+| **Hoy** | Un tablero en bloques: lo que está **en curso o agendado** como ticket (con valija o pasos), el **top de ganas**, la máquina **«Sorpréndanme»** y el **sello pendiente** (o el último recuerdo). Abajo, el ritmo de los dos. |
+| **Ganas** | Cada uno marca de 0 a 100. **Voto a ciegas**: si el otro ya votó, su número queda tapado hasta que votes vos; al votar se destapa y, si los dos están en 85 o más, sale el sello **¡MATCH TOTAL!**. En la lista, cada plan dice si es 🔥 **Match** (los dos ≥ 80), 🤝 **Consenso** (≤ 20 de diferencia) o 🎁 **Por amor al arte** (≥ 45 de diferencia). |
+| **Sorpréndanme** | Filtros (Todo, En casa, Salir, Rápido), un rodillo que pasa por los planes con más ganas y frena de a poco en 1,4 s, y el boleto ganador con «¡Estamos para esa!» (lo agenda para hoy) o «1 tiro más». |
+| **Planes** | Filas técnicas ordenadas por ganas, filtrables por estado, categoría y búsqueda. Deslizar avanza el estado; doble toque = ¡estoy para esa!; mantener = vista rápida. |
+| **Recuerdos** | Polaroids por mes. Un recuerdo queda **100 % sellado** con el puntaje de los dos, una foto y una nota o reseña; lo que falta se ve y se completa en un toque. |
+| **Pelis** 🎬 | Ficha técnica, Letterboxd (póster, año, dirección y **promedio de Letterboxd**) y **curaduría de pareja**: quién es más duro, coincidencia crítica, mayor acuerdo y desacuerdo, ustedes vs. Letterboxd. Importa el diario de Letterboxd. |
+| **Comida, café y salidas** ☕ | Mapa, Instagram, barrio, **barrios conquistados** y «qué pedir», que después de ir se marca **👍 Repetir / 👎 Pasar**. |
+| **Viajes** ✈️ | **Boarding pass** con ida, vuelta, días y `8/12 EN VALIJA`; itinerario por día que se lee sin señal. |
+| **DIY** 🔨 | Pasos y materiales con barra segmentada, y el recordatorio de la foto del **antes** al arrancar y del **después** al terminar. |
+| **Wrapped** | El año en historias: total, categorías, mes más intenso, pelis, curaduría, viajes, barrios, quién es más manija, el plan que los dividió y el **ritmo compartido** (total histórico, mes récord, mejor racha). Sin rachas que se pierden. |
+| **Más** | Categorías, Letterboxd, avisos push y el **Archivo** de versiones. Nada más. |
 
 Todo es **en tiempo real**: lo que carga uno le aparece al otro al instante.
+Y anda **sin señal**: los planes, viajes y valijas quedan guardados en el
+teléfono, y los cambios se mandan al volver.
 
 ## Cómo está hecho
 
@@ -40,14 +43,21 @@ docs/       despliegue y operación
 - **PocketBase** (SQLite) guarda todo, sirve la app y manda el tiempo real.
 - **Rutas con `#`** y base relativa: el mismo build anda en `/estoyparaesa/`
   y en cada versión archivada (`/estoyparaesa/archivo/v1/`).
-- **Temas**: variables CSS en `:root`. Están en la colección `temas`, con
-  número de versión. Hay uno activo y es compartido.
+- **Diseño fijo**: desde la v3 hay un solo sistema neo-brutalista, con sus
+  tokens en `:root` (`web/src/estilos/base.css`). Ya no hay editor de temas;
+  la colección `temas` sigue en la base sólo para las versiones archivadas.
+- **UI optimista**: votar, arrastrar las ganas o tildar se ve al instante y
+  se manda junto un ratito después (`web/src/store.ts`); lo que vuelve por
+  tiempo real se mezcla con lo pendiente para que nada parpadee.
+- **Sin señal**: el service worker (`web/src/sw.ts`) guarda la app, la
+  última copia de los datos (red primero, 4 s) y las fotos.
+- **Fotos**: se achican en el teléfono a 1600 px en JPEG antes de subir.
 
 ## Desarrollo
 
 ```bash
 npm install
-npm test            # cálculos (ranking, rachas, Wrapped)
+npm test            # cálculos (ranking, simetría, sello, ritmo, curaduría, Wrapped…)
 npm run build       # tipos + build en dist/
 
 # servidor (Go 1.24+; baja la toolchain que pide go.mod)

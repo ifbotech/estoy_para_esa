@@ -1,63 +1,93 @@
-import { motion } from "motion/react"
-import { useMemo } from "react"
-import { fecha, MESES } from "../calculos"
+import { useMemo, useState } from "react"
+import { fecha, MESES, momentum, sellado } from "../calculos"
 import { Arte } from "../componentes/Arte"
-import { TituloCinetico } from "../componentes/Deco"
-import { imagenDe } from "../componentes/Tarjetas"
-import { ir } from "../router"
+import { Polaroid } from "../componentes/Polaroid"
 import { useStore } from "../store"
 
-/** Recuerdos: cada plan hecho es una ventana flotante con su foto, como en KARO. */
+/**
+ * Recuerdos: cada plan hecho es una Polaroid, agrupadas por mes. Arriba, el
+ * ritmo de los dos (lo logrado, nunca lo perdido) y los Wrapped.
+ */
 export function Recuerdos() {
   const planes = useStore((s) => s.planes)
-  const categorias = useStore((s) => s.categorias)
+  const votos = useStore((s) => s.votos)
+  const usuarios = useStore((s) => s.usuarios)
+  const [soloSinSellar, setSoloSinSellar] = useState(false)
+  const m = useMemo(() => momentum(planes), [planes])
   const hechos = useMemo(
     () => planes.filter((p) => p.estado === "hecho" && p.hecho_en).sort((a, b) => b.hecho_en.localeCompare(a.hecho_en)),
     [planes],
   )
+  const sinSellar = hechos.filter((p) => !sellado(p, votos, usuarios).completo)
+  const visibles = soloSinSellar ? sinSellar : hechos
   const grupos = useMemo(() => {
-    const m = new Map<string, typeof hechos>()
-    for (const p of hechos) {
+    const g = new Map<string, typeof visibles>()
+    for (const p of visibles) {
       const d = fecha(p.hecho_en)!
       const k = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`
-      m.set(k, [...(m.get(k) ?? []), p])
+      g.set(k, [...(g.get(k) ?? []), p])
     }
-    return [...m]
-  }, [hechos])
+    return [...g]
+  }, [visibles])
   const anios = [...new Set(hechos.map((p) => fecha(p.hecho_en)!.getFullYear()))]
   if (!anios.includes(new Date().getFullYear())) anios.unshift(new Date().getFullYear())
-  const fotos = hechos.reduce((a, p) => a + p.fotos.length, 0)
 
   return (
     <div className="recuerdos">
-      <section className="capitulo" style={{ "--cap": "var(--chicle)" } as React.CSSProperties}>
-        <TituloCinetico lineas={["Lo que", "ya hicimos"]} asoma="cafe" />
-        <p className="etiqueta recuerdos-cuenta">
-          [ {hechos.length} plancitos ] ( {fotos} fotos )
-        </p>
+      <header className="cabeza-pantalla" style={{ "--cc": "var(--rosa)" } as React.CSSProperties}>
+        <div>
+          <p className="etiqueta">lo que ya hicieron</p>
+          <h1 className="titulo-pantalla">Recuerdos</h1>
+        </div>
+      </header>
+
+      <section className="momentum" aria-label="Su ritmo">
+        <div>
+          <b className="num">{m.total}</b>
+          <span>hechos juntos</span>
+        </div>
+        <div>
+          <b className="num">{m.mesRecord ? MESES[m.mesRecord.mes].slice(0, 3) : "—"}</b>
+          <span>{m.mesRecord ? `mes récord · ${m.mesRecord.cantidad}` : "mes récord"}</span>
+        </div>
+        <div>
+          <b className="num">{m.rachaMaxima}</b>
+          <span>semanas seguidas, récord</span>
+        </div>
       </section>
 
       <div className="fila-scroll tickets">
-        {anios.map((a, i) => (
-          <motion.a
-            key={a}
-            href={`#/wrapped/${a}`}
-            className="ticket-wrapped"
-            initial={{ opacity: 0, rotate: -8, y: 20 }}
-            animate={{ opacity: 1, rotate: i % 2 ? 2 : -2, y: 0 }}
-            whileTap={{ x: 3, y: 3 }}
-          >
+        {anios.map((a) => (
+          <a key={a} href={`#/wrapped/${a}`} className="ticket-wrapped">
             <span className="etiqueta">wrapped</span>
-            <b>{a}</b>
-            <span>▶ ver</span>
-          </motion.a>
+            <b className="num">{a}</b>
+            <span aria-hidden>→</span>
+          </a>
         ))}
       </div>
 
+      {hechos.length > 0 && (
+        <div className="fila filtros-recuerdos">
+          <button className="chip" aria-pressed={!soloSinSellar} onClick={() => setSoloSinSellar(false)}>
+            Todos <span className="num">{hechos.length}</span>
+          </button>
+          <button className="chip" aria-pressed={soloSinSellar} onClick={() => setSoloSinSellar(true)}>
+            Sin sellar <span className="num">{sinSellar.length}</span>
+          </button>
+        </div>
+      )}
+
       {!hechos.length && (
         <div className="vacio">
-          <Arte tipo="cafe" tam={14} />
-          Cuando marquen un plan como <b>Hecho</b>, aparece acá con sus fotos.
+          <Arte tipo="cafe" tam={10} />
+          <p>
+            Cuando marquen un plan como <b>Hecho</b>, aparece acá con sus fotos.
+          </p>
+        </div>
+      )}
+      {soloSinSellar && !sinSellar.length && hechos.length > 0 && (
+        <div className="vacio vacio-chico">
+          <p>✦ Todos los recuerdos están sellados.</p>
         </div>
       )}
 
@@ -67,45 +97,13 @@ export function Recuerdos() {
           return (
             <section key={k} className="mes">
               <h2 className="mes-titulo">
-                {MESES[mes]} <span>{anio}</span>
+                {MESES[mes]} <span className="num">{anio}</span>
+                <small className="num">{ps.length}</small>
               </h2>
-              <div className="ventanas">
-                {ps.map((p, i) => {
-                  const c = categorias.find((x) => x.id === p.categoria)
-                  const img = imagenDe(p, "600x0")
-                  const giro = ((p.id.charCodeAt(0) + i * 7) % 9) - 4
-                  return (
-                    <motion.div
-                      key={p.id}
-                      className="ventana"
-                      style={{ rotate: giro }}
-                      drag
-                      dragSnapToOrigin
-                      dragElastic={0.5}
-                      whileDrag={{ scale: 1.06, rotate: 0, zIndex: 5 }}
-                      initial={{ opacity: 0, y: 40 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-20px" }}
-                      transition={{ type: "spring", stiffness: 150, damping: 16 }}
-                      onTap={() => ir(`/plan/${p.id}`)}
-                    >
-                      <header>
-                        <i />
-                        <i />
-                        <i />
-                        <span>{p.titulo.toLowerCase().replace(/[^a-z0-9ñáéíóú]+/gi, "-").slice(0, 18)}.jpg</span>
-                      </header>
-                      <div className="ventana-foto" style={{ background: c?.color }}>
-                        {img ? <img src={img} alt="" loading="lazy" draggable={false} /> : <Arte tipo={c?.personalidad ?? "salida"} tam={12} />}
-                        {p.fotos.length > 1 && <span className="ventana-mas">+{p.fotos.length - 1}</span>}
-                      </div>
-                      <p>{p.titulo}</p>
-                      <span className="etiqueta ventana-fecha">
-                        {c?.emoji} {fecha(p.hecho_en)!.toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
-                      </span>
-                    </motion.div>
-                  )
-                })}
+              <div className="polaroids">
+                {ps.map((p, i) => (
+                  <Polaroid key={p.id} plan={p} giro={i % 2 ? 1 : -1} />
+                ))}
               </div>
             </section>
           )

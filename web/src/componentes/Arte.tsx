@@ -1,15 +1,14 @@
-import { motion } from "motion/react"
 import type { CSSProperties } from "react"
 import type { Personalidad } from "../tipos"
 
 /**
- * Los personajes-objeto de la v2: una cosa con cara por categoría
- * (pochoclo, empanada, taza, valija, lata de pintura y la entrada).
- * No son una mascota: son los planes mismos mirándote.
+ * Los personajes-objeto: una cosa con cara por categoría (pochoclo,
+ * empanada, taza, valija, lata de pintura y la entrada). Desde la v3 son
+ * un detalle quieto, siempre adentro de un bloque: no flotan ni se mueven.
  *
  * `tam` escala como en la v1: el dibujo mide 6 × tam píxeles de ancho.
  */
-const T = "#171313"
+const T = "#121211"
 
 export type TipoArte = Personalidad | "estrella" | "sol"
 
@@ -111,7 +110,7 @@ export function Entrada({ mira = 0, manos = true }: { mira?: number; manos?: boo
         fill="#FBF6EE" stroke={T} strokeWidth={4} strokeLinejoin="round"
       />
       <path d="M100 12 v76" stroke={T} strokeWidth={3} strokeDasharray="5 6" />
-      <text x={117} y={56} fontFamily="'Lilita One', sans-serif" fontSize={13} fill="#E8432E" transform="rotate(-90 117 52)">
+      <text x={117} y={56} fontFamily="'Space Mono', monospace" fontWeight={700} fontSize={13} fill="#E8432E" transform="rotate(-90 117 52)">
         ¡SÍ!
       </text>
       <Ojos x={54} y={42} mira={mira} />
@@ -180,50 +179,9 @@ export function Arte({
   className?: string
 }) {
   const Dibujo = DIBUJOS[tipo] ?? Estrella
-  // Cada uno parpadea a su ritmo.
-  const demora = ((tipo.charCodeAt(0) * 37 + tam * 13) % 40) / 10
   return (
-    <span
-      className={`personaje personaje-${tipo} ${className}`}
-      style={{ width: tam * 6, "--parpadeo": `${-demora}s`, ...style } as CSSProperties}
-      aria-hidden
-    >
+    <span className={`personaje personaje-${tipo} ${className}`} style={{ width: tam * 6, ...style } as CSSProperties} aria-hidden>
       <Dibujo mira={mira} />
-    </span>
-  )
-}
-
-/** Un personaje suelto que flota y se puede revolear con el dedo: vuelve solo. */
-export function ArteFlotante({ tipo, tam, style, demora = 0 }: { tipo: TipoArte; tam?: number; style?: CSSProperties; demora?: number }) {
-  return (
-    <motion.div
-      className="flotante"
-      style={style}
-      drag
-      dragSnapToOrigin
-      dragElastic={0.6}
-      whileDrag={{ scale: 1.2, rotate: 10, zIndex: 20 }}
-      whileTap={{ scale: 1.1 }}
-      initial={{ opacity: 0, scale: 0, rotate: -30 }}
-      animate={{ opacity: 1, scale: 1, rotate: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 14, delay: demora }}
-    >
-      <div className="flota" style={{ animationDelay: `${-demora * 3}s` }}>
-        <Arte tipo={tipo} tam={tam} />
-      </div>
-    </motion.div>
-  )
-}
-
-/**
- * La entrada (o el personaje que toque) asomándose entre dos líneas de un
- * título, agarrada del borde de la segunda. Se asoma una vez al entrar y
- * después de vez en cuando.
- */
-export function Asoma({ tipo = "entrada", ancho = 110 }: { tipo?: TipoArte | "entrada"; ancho?: number }) {
-  return (
-    <span className="asoma" style={{ width: ancho }} aria-hidden>
-      <span className="asoma-cuerpo">{tipo === "entrada" ? <Entrada /> : <Arte tipo={tipo} tam={ancho / 6} />}</span>
     </span>
   )
 }

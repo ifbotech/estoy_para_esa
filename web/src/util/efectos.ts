@@ -2,7 +2,7 @@ import confetti from "canvas-confetti"
 
 function colores(): string[] {
   const s = getComputedStyle(document.documentElement)
-  return ["--a1", "--a2", "--a3", "--a4"].map((v) => s.getPropertyValue(v).trim() || "#ff4fa3")
+  return ["--amarillo", "--verde", "--rojo", "--azul", "--tinta"].map((v) => s.getPropertyValue(v).trim() || "#121211")
 }
 
 const reducido = () => matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -11,8 +11,8 @@ const reducido = () => matchMedia("(prefers-reduced-motion: reduce)").matches
 export function festejar(x = 0.5, y = 0.6, fuerza = 1) {
   if (reducido()) return
   const colors = colores()
-  confetti({ particleCount: Math.round(90 * fuerza), spread: 75, startVelocity: 45, origin: { x, y }, colors, scalar: 1.1, disableForReducedMotion: true })
-  setTimeout(() => confetti({ particleCount: Math.round(50 * fuerza), spread: 120, startVelocity: 30, origin: { x, y: y - 0.1 }, colors, shapes: ["star"], disableForReducedMotion: true }), 180)
+  // papel picado cuadrado, de los colores de la app: una sola tanda
+  confetti({ particleCount: Math.round(60 * fuerza), spread: 70, startVelocity: 38, origin: { x, y }, colors, shapes: ["square"], scalar: 0.9, ticks: 140, disableForReducedMotion: true })
 }
 
 /** Papel picado desde los dos costados, para los momentos grandes. */

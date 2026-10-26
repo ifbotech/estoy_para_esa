@@ -26,6 +26,17 @@ export async function cambiarEstado(plan: Plan, estado: Estado, origen?: { clien
   await editarPlan(plan.id, { estado })
 }
 
+/** «¡Estamos para esa!»: agendado para hoy a la noche (o en una hora, si ya es tarde). */
+export async function agendarHoy(plan: Plan) {
+  const cuando = new Date()
+  if (cuando.getHours() < 21) cuando.setHours(21, 0, 0, 0)
+  else cuando.setHours(cuando.getHours() + 1, 0, 0, 0)
+  vibrar([20, 40, 20])
+  sonar("esa")
+  await editarPlan(plan.id, { estado: "agendado", cuando: cuando.toISOString() })
+  avisar(`📅 «${plan.titulo}» agendado para hoy`)
+}
+
 /** Deslizar: un paso adelante (+1) o atrás (-1). */
 export function moverEstado(plan: Plan, dir: 1 | -1) {
   const i = ESTADOS.findIndex((e) => e.id === plan.estado)

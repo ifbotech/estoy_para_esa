@@ -1,8 +1,11 @@
 import { AnimatePresence, motion, useDragControls } from "motion/react"
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { vibrar } from "../util/efectos"
+import { aCiegas, esMatchTotal } from "../calculos"
+import { useStore, useYo, votar } from "../store"
+import { festejar, vibrar } from "../util/efectos"
 import { sonar } from "../util/sonidos"
-import { Estallido } from "./Deco"
+import { EtiquetaSimetria, Sello } from "./Deco"
+import { colorDe } from "./Tarjetas"
 import type { Estado } from "../tipos"
 import { ESTADOS } from "../tipos"
 
@@ -29,6 +32,9 @@ export function fraseDeGanas(v: number) {
 /**
  * Las ganas de una persona, de 0 a 100. La propia se arrastra; la del otro
  * se ve pero no se toca. Guarda al soltar.
+ *
+ * `ciego`: el otro ya votó pero vos todavía no; su barra queda tapada con
+ * un rayado hasta que votes (para que su número no te ancle).
  */
 export function BarraGanas({
   valor,
@@ -37,7 +43,9 @@ export function BarraGanas({
   editable,
   onCambio,
   pendiente = false,
+  ciego = false,
   inicial,
+  destapada = false,
 }: {
   valor: number
   nombre: string
@@ -45,7 +53,9 @@ export function BarraGanas({
   editable: boolean
   onCambio?: (v: number) => void
   pendiente?: boolean
+  ciego?: boolean
   inicial?: string
+  destapada?: boolean
 }) {
   const [local, setLocal] = useState(valor)
   const arrastrando = useRef(false)
@@ -70,29 +80,34 @@ export function BarraGanas({
   }
   const soltar = (v: number) => {
     arrastrando.current = false
-    if (v >= 92 && valor < 92) {
-      vibrar([20, 40, 20])
-      sonar("esa")
-    }
+    if (v >= 92 && valor < 92) sonar("esa")
     onCambio?.(v)
   }
+  const tapada = ciego && !editable
+  const sinVoto = pendiente && !tapada
 
   return (
-    <div className={`ganas ${editable ? "editable" : ""} ${pendiente ? "pendiente" : ""}`} style={{ "--c": color } as React.CSSProperties}>
+    <div
+      className={`ganas ${editable ? "editable" : ""} ${sinVoto ? "pendiente" : ""} ${tapada ? "tapada" : ""} ${destapada ? "destapada" : ""}`}
+      style={{ "--c": color } as React.CSSProperties}
+    >
       <div className="ganas-cabeza">
+        <span className="ganas-inicial" aria-hidden>
+          {inicial ?? nombre.slice(0, 1)}
+        </span>
         <span className="ganas-nombre">{nombre}</span>
-        <span className="ganas-frase">{pendiente ? "todavía no votó" : fraseDeGanas(local)}</span>
-        <span className="ganas-num">{pendiente ? "—" : `${local}%`}</span>
+        <span className="ganas-frase">{tapada ? "votá para destapar" : sinVoto ? (editable ? "tocá la barra para votar" : "todavía no votó") : fraseDeGanas(local)}</span>
+        <span className="ganas-num num">{tapada ? "¿?%" : sinVoto ? "—" : `${local}%`}</span>
       </div>
       <div
         ref={pista}
         className="ganas-pista"
         role="slider"
         tabIndex={editable ? 0 : -1}
-        aria-label={`Ganas de ${nombre}`}
+        aria-label={tapada ? `Ganas de ${nombre}: tapadas hasta que votes` : `Ganas de ${nombre}`}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={local}
+        aria-valuenow={tapada ? undefined : local}
         aria-readonly={!editable}
         onPointerDown={(e) => {
           if (!editable) return
@@ -117,31 +132,84 @@ export function BarraGanas({
           }
         }}
       >
-        <div className="ganas-relleno" style={{ width: `${pendiente ? 0 : local}%` }} />
-        {!pendiente && (
-          <motion.div
-            className="ganas-perilla"
-            style={{ left: `${local}%` }}
-            animate={{ scale: 0.9 + local / 500 }}
-            transition={{ type: "spring", stiffness: 400, damping: 18 }}
-          >
-            {inicial ?? nombre.slice(0, 1)}
+        {tapada ? (
+          <span className="ganas-rayado" aria-hidden />
+        ) : (
+          <>
+            <div className="ganas-relleno" style={{ width: `${sinVoto ? 0 : local}%` }} />
+            <span className="ganas-marcas" aria-hidden>
+              <i />
+              <i />
+              <i />
+            </span>
+            {editable && !sinVoto && <div className="ganas-perilla" style={{ left: `${local}%` }} />}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Las ganas de los dos en un plan, con el voto a ciegas: la barra del otro
+ * queda tapada hasta que votes. Cuando votás se destapa y, si los dos
+ * tienen 85 o más, aparece el sello de ¡MATCH TOTAL!.
+ */
+export function GanasDeLosDos({ planId }: { planId: string }) {
+  const usuarios = useStore((s) => s.usuarios)
+  const todos = useStore((s) => s.votos)
+  const votos = todos.filter((v) => v.plan === planId)
+  const yo = useYo()
+  const ciego = aCiegas(votos, yo?.id)
+  const match = esMatchTotal(votos)
+  const estabaCiego = useRef(ciego)
+  const [destape, setDestape] = useState(false)
+  const raiz = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (estabaCiego.current && !ciego) {
+      setDestape(true)
+      vibrar(match ? [30, 50, 40] : 20)
+      if (match && raiz.current) {
+        const r = raiz.current.getBoundingClientRect()
+        festejar((r.left + r.width / 2) / innerWidth, (r.top + r.height / 2) / innerHeight, 1)
+        sonar("esa")
+      }
+      const t = setTimeout(() => setDestape(false), 1600)
+      estabaCiego.current = ciego
+      return () => clearTimeout(t)
+    }
+    estabaCiego.current = ciego
+  }, [ciego, match])
+
+  return (
+    <div className="ganas-duo" ref={raiz}>
+      {usuarios.map((u, i) => {
+        const v = votos.find((x) => x.usuario === u.id)
+        const mio = u.id === yo?.id
+        return (
+          <BarraGanas
+            key={u.id}
+            nombre={mio ? `${u.name} (vos)` : u.name}
+            inicial={u.name.slice(0, 1)}
+            color={colorDe(u, i)}
+            valor={v?.ganas ?? 50}
+            pendiente={!v}
+            ciego={!mio && ciego}
+            destapada={!mio && destape}
+            editable={mio}
+            onCambio={(g) => votar(planId, { ganas: g })}
+          />
+        )
+      })}
+      <AnimatePresence>
+        {!ciego && match && (
+          <motion.div className="ganas-match" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+            <Sello>¡MATCH TOTAL! 🔥</Sello>
           </motion.div>
         )}
-        <AnimatePresence>
-          {!pendiente && local >= 92 && (
-            <motion.span
-              className="ganas-estallido"
-              initial={{ scale: 0, rotate: -30 }}
-              animate={{ scale: 1, rotate: -8 }}
-              exit={{ scale: 0, rotate: 20 }}
-              transition={{ type: "spring", stiffness: 420, damping: 14 }}
-            >
-              <Estallido>¡ESTOY PARA ESA!</Estallido>
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </div>
+      </AnimatePresence>
+      {!ciego && !match && <EtiquetaSimetria votos={votos} />}
     </div>
   )
 }
@@ -156,12 +224,11 @@ export function Estrellas({ valor, onCambio, tam = 30 }: { valor: number; onCamb
       {[1, 2, 3, 4, 5].map((n) => {
         const lleno = v >= n ? 1 : v >= n - 0.5 ? 0.5 : 0
         return (
-          <motion.button
+          <button
             key={n}
             type="button"
             className="estrella"
             disabled={!onCambio}
-            whileTap={{ scale: 1.4, rotate: 20 }}
             aria-label={`${n} estrellas`}
             onPointerMove={(e) => {
               if (!onCambio) return
@@ -178,34 +245,9 @@ export function Estrellas({ valor, onCambio, tam = 30 }: { valor: number; onCamb
           >
             <span className="estrella-fondo">★</span>
             <span className="estrella-llena" style={{ width: `${lleno * 100}%` }}>★</span>
-          </motion.button>
+          </button>
         )
       })}
-    </div>
-  )
-}
-
-// --- medidor circular ------------------------------------------------------
-
-export function Medidor({ valor, tam = 120, children }: { valor: number | null; tam?: number; children?: ReactNode }) {
-  const r = 44
-  const c = 2 * Math.PI * r
-  return (
-    <div className="medidor" style={{ width: tam, height: tam }}>
-      <svg viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={r} className="medidor-pista" />
-        <motion.circle
-          cx="50"
-          cy="50"
-          r={r}
-          className="medidor-arco"
-          strokeDasharray={c}
-          initial={{ strokeDashoffset: c }}
-          animate={{ strokeDashoffset: c - (c * (valor ?? 0)) / 100 }}
-          transition={{ type: "spring", stiffness: 60, damping: 14 }}
-        />
-      </svg>
-      <div className="medidor-centro">{children}</div>
     </div>
   )
 }
@@ -257,7 +299,7 @@ export function Hoja({ abierta, onCerrar, titulo, children }: { abierta: boolean
   )
 }
 
-// --- botón con rebote ------------------------------------------------------
+// --- botón mecánico (se hunde con :active, ver base.css) -------------------
 
 export function Boton({
   children,
@@ -276,16 +318,11 @@ export function Boton({
   type?: "button" | "submit"
   "aria-label"?: string
 }) {
-  // Se hunde con CSS (:active) y al soltar hace «jelly», como en Planetoño.
   return (
     <button
       type={type}
       className={`boton boton-${variante} ${className}`}
       onClick={(e) => {
-        const b = e.currentTarget
-        b.classList.remove("jelly")
-        void b.offsetWidth
-        b.classList.add("jelly")
         sonar("pop")
         onClick?.(e)
       }}
@@ -297,35 +334,26 @@ export function Boton({
   )
 }
 
-// --- pasos: los estados del plan como el «How it works» de Planetoño -------
+// --- pasos: los cuatro estados del plan como una regla segmentada --------
 
-export function Pasos({ actual, onCambio, compacto = false }: { actual: Estado; onCambio?: (e: Estado, ev: React.MouseEvent) => void; compacto?: boolean }) {
+export function Pasos({ actual, onCambio }: { actual: Estado; onCambio?: (e: Estado, ev: React.MouseEvent) => void }) {
+  const ia = ESTADOS.findIndex((x) => x.id === actual)
   return (
-    <div className={`pasos ${compacto ? "compacto" : ""}`} role="radiogroup" aria-label="Estado del plan">
-      {ESTADOS.map((e, i) => {
-        const activo = e.id === actual
-        return (
-          <motion.button
-            key={e.id}
-            type="button"
-            role="radio"
-            aria-checked={activo}
-            aria-label={e.nombre}
-            layout
-            className={`paso ${activo ? "activo" : ""} ${ESTADOS.findIndex((x) => x.id === actual) > i ? "pasado" : ""}`}
-            onClick={(ev) => onCambio?.(e.id, ev)}
-            whileTap={{ scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 500, damping: 32 }}
-          >
-            <motion.span layout="position" className="paso-num">{i + 1}</motion.span>
-            {activo && (
-              <motion.span className="paso-nombre" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08 }}>
-                {e.nombre}
-              </motion.span>
-            )}
-          </motion.button>
-        )
-      })}
+    <div className="pasos" role="radiogroup" aria-label="Estado del plan">
+      {ESTADOS.map((e, i) => (
+        <button
+          key={e.id}
+          type="button"
+          role="radio"
+          aria-checked={e.id === actual}
+          aria-label={e.nombre}
+          className={`paso ${e.id === actual ? "activo" : ""} ${ia > i ? "pasado" : ""}`}
+          onClick={(ev) => onCambio?.(e.id, ev)}
+        >
+          <span className="paso-num num">{String(i + 1).padStart(2, "0")}</span>
+          <span className="paso-nombre">{e.nombre}</span>
+        </button>
+      ))}
     </div>
   )
 }

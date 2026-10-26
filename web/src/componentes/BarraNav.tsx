@@ -1,4 +1,3 @@
-import { motion } from "motion/react"
 import { vibrar } from "../util/efectos"
 
 const ICONOS: Record<string, React.ReactNode> = {
@@ -27,12 +26,13 @@ const TABS = [
   { id: "mas", nombre: "Más" },
 ]
 
+/** La barra de abajo: fija, de borde a borde, celdas separadas por tinta. */
 export function BarraNav({ actual, onNuevo }: { actual: string; onNuevo: () => void }) {
   return (
     <nav className="nav" aria-label="Secciones">
       {TABS.map((t) =>
         t.id === "+" ? (
-          <motion.button
+          <button
             key="+"
             className="nav-mas"
             aria-label="Nuevo plan"
@@ -40,14 +40,11 @@ export function BarraNav({ actual, onNuevo }: { actual: string; onNuevo: () => v
               vibrar(15)
               onNuevo()
             }}
-            whileTap={{ scale: 0.85, rotate: 90 }}
-            transition={{ type: "spring", stiffness: 500, damping: 15 }}
           >
-            <span>+</span>
-          </motion.button>
+            <span aria-hidden>+</span>
+          </button>
         ) : (
           <a key={t.id} href={`#/${t.id}`} className={`nav-tab ${actual === t.id ? "activa" : ""}`} aria-current={actual === t.id ? "page" : undefined}>
-            {actual === t.id && <motion.span layoutId="nav-burbuja" className="nav-burbuja" transition={{ type: "spring", stiffness: 500, damping: 32 }} />}
             <svg className="nav-icono" viewBox="0 0 24 24" aria-hidden>
               {ICONOS[t.id]}
             </svg>

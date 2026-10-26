@@ -7,25 +7,25 @@ export const PERSONALIDADES: Record<
 > = {
   cine: {
     nombre: "Cine",
-    descripcion: "Terciopelo rojo, luces de marquesina y Letterboxd.",
+    descripcion: "Ficha técnica, Letterboxd y curaduría de pareja.",
     listas: [],
     verbo: "verla",
   },
   cocina: {
     nombre: "Cocina",
-    descripcion: "Mantel a cuadros, Google Maps e Instagram.",
+    descripcion: "Mapa, Instagram, barrio y qué pedir (repetir o pasar).",
     listas: [{ id: "pedir", nombre: "Qué pedir", placeholder: "La milanesa napolitana..." }],
     verbo: "ir a comer",
   },
   cafe: {
     nombre: "Café",
-    descripcion: "Espuma, granos y el lugar en el mapa.",
+    descripcion: "El lugar en el mapa, barrio y qué pedir.",
     listas: [{ id: "pedir", nombre: "Qué pedir", placeholder: "Flat white y medialuna..." }],
     verbo: "ir a tomar algo",
   },
   viaje: {
     nombre: "Viaje",
-    descripcion: "Cielo, sellos de pasaporte, itinerario y valija.",
+    descripcion: "Boarding pass, itinerario por día y valija.",
     listas: [
       { id: "itinerario", nombre: "Itinerario", placeholder: "Día 1: llegar y caminar la rambla..." },
       { id: "valija", nombre: "Valija", placeholder: "Protector solar..." },
@@ -34,7 +34,7 @@ export const PERSONALIDADES: Record<
   },
   taller: {
     nombre: "Taller",
-    descripcion: "Plano azul, pasos, materiales y el antes y después.",
+    descripcion: "Pasos, materiales y la foto del antes y el después.",
     listas: [
       { id: "pasos", nombre: "Pasos", placeholder: "Lijar la madera..." },
       { id: "materiales", nombre: "Materiales", placeholder: "Pintura al agua blanca..." },
@@ -43,7 +43,7 @@ export const PERSONALIDADES: Record<
   },
   salida: {
     nombre: "Salida",
-    descripcion: "Neón, papel picado y el lugar.",
+    descripcion: "El lugar, el barrio y el mapa.",
     listas: [],
     verbo: "salir",
   },

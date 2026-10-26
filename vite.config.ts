@@ -38,8 +38,8 @@ export default defineConfig({
         scope: "./",
         display: "standalone",
         orientation: "portrait",
-        background_color: "#120f2b",
-        theme_color: "#120f2b",
+        background_color: "#F4F0E6",
+        theme_color: "#F4F0E6",
         icons: [
           { src: "iconos/icono-192.png", sizes: "192x192", type: "image/png" },
           { src: "iconos/icono-512.png", sizes: "512x512", type: "image/png" },
@@ -47,6 +47,8 @@ export default defineConfig({
         ],
       },
       injectManifest: {
+        // El service worker sale como un script clásico de un solo archivo.
+        rollupFormat: "iife",
         globPatterns: ["**/*.{js,css,html,woff2,png,svg,webmanifest}"],
         // Sólo las letras latinas: los demás alfabetos se bajan si alguna vez hacen falta.
         globIgnores: ["**/*-{vietnamese,cyrillic,cyrillic-ext,greek,greek-ext}-*.woff2"],

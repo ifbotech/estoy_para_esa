@@ -1,12 +1,11 @@
-import { AnimatePresence, LayoutGroup, motion } from "motion/react"
 import { useMemo, useState } from "react"
-import { rankear } from "../calculos"
+import { barriosConquistados, curaduriaPelis, rankear } from "../calculos"
 import { Arte } from "../componentes/Arte"
-import { TituloCinetico } from "../componentes/Deco"
+import { Bloque } from "../componentes/Deco"
 import { TarjetaPlan } from "../componentes/Tarjetas"
 import type { Ruta } from "../router"
 import { useStore } from "../store"
-import { ESTADOS, type Estado } from "../tipos"
+import { ESTADOS, type Categoria, type Estado, type Plan, type Voto } from "../tipos"
 
 function normalizar(s: string) {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -27,71 +26,149 @@ export function Planes({ ruta }: { ruta: Ruta }) {
     )
     const r = rankear(filtrados, votos)
     if (estado === "hecho" && !q) r.sort((a, b) => b.plan.hecho_en.localeCompare(a.plan.hecho_en))
+    if (estado === "agendado" && !q) r.sort((a, b) => (a.plan.cuando || "9999").localeCompare(b.plan.cuando || "9999"))
     return r
   }, [planes, votos, estado, cat, busqueda])
 
   const cuenta = (e: Estado) => planes.filter((p) => p.estado === e && (!cat || p.categoria === cat)).length
   const catActual = categorias.find((c) => c.id === cat)
+  const deLaCategoria = catActual ? planes.filter((p) => p.categoria === catActual.id) : []
 
   return (
     <div className="planes">
-      <section className="capitulo planes-cabeza" style={{ "--cap": catActual?.color ?? "var(--lavanda)" } as React.CSSProperties}>
-        <TituloCinetico
-          key={cat ?? "todas"}
-          lineas={catActual ? [catActual.nombre] : ["Todos", "los planes"]}
-          asoma={catActual ? catActual.personalidad : "entrada"}
-          className="planes-titulo"
-        />
+      <header className="cabeza-pantalla" style={{ "--cc": catActual?.color ?? "var(--amarillo)" } as React.CSSProperties}>
+        <div>
+          <p className="etiqueta">{catActual ? "categoría" : "ordenados por ganas"}</p>
+          <h1 className="titulo-pantalla">{catActual ? `${catActual.emoji} ${catActual.nombre}` : "Planes"}</h1>
+        </div>
         {catActual && (
-          <span className="planes-arte">
-            <Arte tipo={catActual.personalidad} tam={14} mira={-1} />
+          <span className="cabeza-arte">
+            <Arte tipo={catActual.personalidad} tam={9} />
           </span>
         )}
-        <p>Ordenados por ganas: arriba lo que más ganas les da a los dos.</p>
-      </section>
+      </header>
 
       <input className="campo buscador" type="search" placeholder="Buscar un plan…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
 
-      <LayoutGroup>
-        <div className="filtro-estados" role="tablist" aria-label="Estado">
-          {ESTADOS.map((e, i) => (
-            <button key={e.id} role="tab" aria-selected={estado === e.id} className={`filtro-estado ${estado === e.id ? "activo" : ""}`} onClick={() => setEstado(e.id)}>
-              {estado === e.id && <motion.span layoutId="filtro-estado" className="filtro-fondo" transition={{ type: "spring", stiffness: 500, damping: 35 }} />}
-              <span className="filtro-num">{i + 1}</span>
-              <span className="filtro-nombre">{e.nombre}</span>
-              <span className="filtro-cuenta">{cuenta(e.id)}</span>
-            </button>
-          ))}
-        </div>
-      </LayoutGroup>
+      <div className="filtro-estados" role="tablist" aria-label="Estado">
+        {ESTADOS.map((e, i) => (
+          <button key={e.id} role="tab" aria-selected={estado === e.id} className={`filtro-estado ${estado === e.id ? "activo" : ""}`} onClick={() => setEstado(e.id)}>
+            <span className="filtro-num num">{String(i + 1).padStart(2, "0")}</span>
+            <span className="filtro-nombre">{e.nombre}</span>
+            <span className="filtro-cuenta num">{cuenta(e.id)}</span>
+          </button>
+        ))}
+      </div>
 
       <div className="fila-scroll chips-cat">
         <button className="chip" aria-pressed={!cat} onClick={() => setCat(null)}>
-          ✦ Todas
+          Todas
         </button>
         {categorias.map((c) => (
-          <button key={c.id} className="chip" aria-pressed={cat === c.id} onClick={() => setCat(cat === c.id ? null : c.id)}>
+          <button
+            key={c.id}
+            className="chip chip-color"
+            style={{ "--cc": c.color } as React.CSSProperties}
+            aria-pressed={cat === c.id}
+            onClick={() => setCat(cat === c.id ? null : c.id)}
+          >
             {c.emoji} {c.nombre}
           </button>
         ))}
       </div>
 
-      {lista.length > 0 && <p className="pista-gestos etiqueta">deslizá → para avanzar · doble toque: ¡estoy para esa! · mantené para ver rápido</p>}
+      {catActual && <ExtrasCategoria cat={catActual} planes={deLaCategoria} votos={votos} />}
+
+      {lista.length > 0 && <p className="pista-gestos etiqueta">deslizá → avanza el estado · doble toque: ¡estoy para esa! · mantené: vista rápida</p>}
 
       <div className="lista-planes">
-        <AnimatePresence mode="popLayout">
-          {lista.map((r, i) => (
-            <TarjetaPlan key={r.plan.id} r={r} puesto={estado !== "hecho" && !busqueda && r.promedio !== null ? i + 1 : undefined} />
-          ))}
-        </AnimatePresence>
+        {lista.map((r, i) => (
+          <TarjetaPlan key={r.plan.id} r={r} puesto={estado !== "hecho" && estado !== "agendado" && !busqueda && r.promedio !== null ? i + 1 : undefined} />
+        ))}
       </div>
 
       {!lista.length && (
-        <motion.div className="vacio" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
-          <Arte tipo={catActual?.personalidad ?? "salida"} tam={14} />
-          {busqueda ? "Nada con ese nombre." : estado === "hecho" ? "Todavía nada hecho acá. ¡A hacer!" : "Nada por acá todavía. Tocá el + para sumar uno."}
-        </motion.div>
+        <div className="vacio">
+          <Arte tipo={catActual?.personalidad ?? "salida"} tam={10} />
+          <p>{busqueda ? "Nada con ese nombre." : estado === "hecho" ? "Todavía nada hecho acá." : "Nada por acá todavía. Tocá el + para sumar uno."}</p>
+        </div>
       )}
     </div>
   )
+}
+
+/** Lo propio de cada categoría: la curaduría en pelis, los barrios en lugares. */
+function ExtrasCategoria({ cat, planes, votos }: { cat: Categoria; planes: Plan[]; votos: Voto[] }) {
+  const usuarios = useStore((s) => s.usuarios)
+  const nombre = (id: string) => usuarios.find((u) => u.id === id)?.name ?? "Alguien"
+  if (cat.personalidad === "cine") {
+    const c = curaduriaPelis(planes, votos)
+    if (!c.porPersona.length) return null
+    return (
+      <Bloque titulo="Curaduría de pareja" className="curaduria">
+        <dl className="datos-grilla">
+          {c.porPersona.map((p) => (
+            <div key={p.usuario}>
+              <dt>{nombre(p.usuario)}</dt>
+              <dd className="num">★ {p.promedio.toFixed(1).replace(".", ",")}</dd>
+            </div>
+          ))}
+          {c.coincidencia !== null && (
+            <div>
+              <dt>Coincidencia</dt>
+              <dd className="num">{c.coincidencia}%</dd>
+            </div>
+          )}
+          {c.vsLetterboxd && (
+            <div>
+              <dt>vs. Letterboxd</dt>
+              <dd className="num">
+                {c.vsLetterboxd.diferencia >= 0 ? "+" : "−"}
+                {Math.abs(c.vsLetterboxd.diferencia).toFixed(1).replace(".", ",")}
+              </dd>
+            </div>
+          )}
+        </dl>
+        <ul className="curaduria-frases">
+          {c.masDuro && (
+            <li>
+              <b>{nombre(c.masDuro.usuario)}</b> es más duro puntuando ({c.masDuro.diferencia.toFixed(1).replace(".", ",")} ★ menos).
+            </li>
+          )}
+          {c.mayorAcuerdo && (
+            <li>
+              Mayor acuerdo: <a href={`#/plan/${c.mayorAcuerdo.plan.id}`}>{c.mayorAcuerdo.plan.titulo}</a>
+            </li>
+          )}
+          {c.mayorDesacuerdo && (
+            <li>
+              Los dividió: <a href={`#/plan/${c.mayorDesacuerdo.plan.id}`}>{c.mayorDesacuerdo.plan.titulo}</a> ({c.mayorDesacuerdo.puntajes.map((p) => `${p}★`).join(" vs ")})
+            </li>
+          )}
+          {c.vsLetterboxd && (
+            <li>
+              En {c.vsLetterboxd.cantidad} {c.vsLetterboxd.cantidad === 1 ? "peli" : "pelis"} con promedio de Letterboxd, ustedes ponen{" "}
+              {c.vsLetterboxd.diferencia >= 0 ? "más" : "menos"} que la gente.
+            </li>
+          )}
+        </ul>
+      </Bloque>
+    )
+  }
+  if (cat.personalidad === "cocina" || cat.personalidad === "cafe" || cat.personalidad === "salida") {
+    const barrios = barriosConquistados(planes)
+    if (!barrios.length) return null
+    return (
+      <Bloque titulo="Barrios conquistados" accion={<span className="num">{barrios.length}</span>}>
+        <ul className="barrios">
+          {barrios.map((b) => (
+            <li key={b.barrio}>
+              {b.barrio} <span className="num">×{b.cantidad}</span>
+            </li>
+          ))}
+        </ul>
+      </Bloque>
+    )
+  }
+  return null
 }

@@ -1,9 +1,8 @@
-import { motion } from "motion/react"
 import { useState } from "react"
 import { avisar } from "../../componentes/Avisos"
 import { Boton, Estrellas } from "../../componentes/Controles"
 import { pb } from "../../pb"
-import { crearPlan, editarPlan, useStore, useYo, votar } from "../../store"
+import { crearPlan, editarPerfil, editarPlan, useStore, useYo, votar } from "../../store"
 import type { Plan } from "../../tipos"
 import { festejar } from "../../util/efectos"
 
@@ -26,6 +25,7 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 export function Letterboxd() {
   const yo = useYo()
   const planes = useStore((s) => s.planes)
+  const usuarios = useStore((s) => s.usuarios)
   const categorias = useStore((s) => s.categorias)
   const cine = categorias.filter((c) => c.personalidad === "cine").map((c) => c.id)
   const [usuario, setUsuario] = useState(yo?.letterboxd ?? "")
@@ -39,12 +39,18 @@ export function Letterboxd() {
     try {
       const r = await pb.send<{ pelis: PeliDiario[] }>("/api/epe/letterboxd", { query: { usuario: usuario.trim() } })
       setPelis(r.pelis)
+      // queda guardado como tu usuario para la próxima
+      const limpio = usuario.trim().replace(/^@/, "")
+      if (limpio.toLowerCase() !== (yo?.letterboxd ?? "").toLowerCase() && !planesDeOtro(limpio)) void editarPerfil({ letterboxd: limpio })
       if (!r.pelis.length) avisar("El diario está vacío o es privado", "info")
     } catch {
       avisar("No encontré ese usuario de Letterboxd", "error")
     }
     setCargando(false)
   }
+
+  // si escribieron el usuario del otro, no se pisa el propio
+  const planesDeOtro = (u: string) => usuarios.some((x) => x.id !== yo?.id && x.letterboxd?.toLowerCase() === u.toLowerCase())
 
   const enLista = (p: PeliDiario): Plan | undefined =>
     planes.find((x) => cine.includes(x.categoria) && (norm(x.titulo) === norm(p.titulo) || (x.datos?.letterboxd && x.datos.letterboxd === p.link)))
@@ -96,10 +102,10 @@ export function Letterboxd() {
       </form>
 
       {pendientes.length > 0 && (
-        <section className="seccion">
-          <div className="seccion-cabeza">
-            <h2>Estaban en la lista</h2>
-            <Boton
+        <section className="aviso-voto">
+          <b className="num">{pendientes.length}</b>
+          <span>{pendientes.length === 1 ? "estaba en la lista" : "estaban en la lista"}</span>
+          <Boton
               className="boton-chico"
               onClick={async (e) => {
                 for (const p of pendientes) await marcar(p, enLista(p))
@@ -109,7 +115,6 @@ export function Letterboxd() {
             >
               Marcar todas
             </Boton>
-          </div>
         </section>
       )}
 
@@ -119,7 +124,7 @@ export function Letterboxd() {
             const plan = enLista(p)
             const lista = hechas.has(p.link) || plan?.estado === "hecho"
             return (
-              <motion.div key={p.link + i} className="diario-peli" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 15) * 0.03 }}>
+              <div key={p.link + i} className="diario-peli">
                 {p.poster ? <img src={p.poster} alt="" loading="lazy" /> : <span className="diario-sin">🎬</span>}
                 <div className="diario-texto">
                   <b>{p.titulo}</b>
@@ -131,11 +136,11 @@ export function Letterboxd() {
                 {lista ? (
                   <span className="etiqueta">✓ vista</span>
                 ) : (
-                  <Boton className="boton-chico" variante={plan ? "primario" : "fantasma"} onClick={() => marcar(p, plan)}>
+                  <Boton className="boton-chico" variante={plan ? "primario" : "secundario"} onClick={() => marcar(p, plan)}>
                     {plan ? "Vista ✓" : "+ Sumar"}
                   </Boton>
                 )}
-              </motion.div>
+              </div>
             )
           })}
         </div>

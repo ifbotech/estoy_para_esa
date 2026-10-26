@@ -1,5 +1,11 @@
 [
   {
+    "id": "v3",
+    "nombre": "Brutalismo editorial",
+    "fecha": "2026-10-26",
+    "notas": "Diseño fijo y calmo: papel y tinta, bordes de 2 px, sombras duras y botones que se hunden, sin temas ni cosas moviéndose solas. Hoy como tablero en bloques, voto a ciegas con match, etiquetas de simetría, máquina «Sorpréndanme» con filtros, sello de cierre en los recuerdos, boarding pass, curaduría de pelis, barrios conquistados y ritmo compartido en lugar de rachas."
+  },
+  {
     "id": "v2",
     "nombre": "Papel Pop",
     "fecha": "2026-10-26",

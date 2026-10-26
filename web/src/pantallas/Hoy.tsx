@@ -1,14 +1,19 @@
 import { AnimatePresence, motion } from "motion/react"
-import { useMemo, useState } from "react"
-import { abrirVistaRapida, estoyParaEsa } from "../acciones"
-import { rankear, sortear, type Rankeado } from "../calculos"
+import { useMemo, useRef, useState } from "react"
+import { agendarHoy } from "../acciones"
+import {
+  FILTROS_SORTEO, MESES, candidatosSorteo, demorasRodillo, fecha, momentum, rankear, sellado, sortear,
+  type FiltroSorteo, type Rankeado,
+} from "../calculos"
 import { Arte } from "../componentes/Arte"
 import { Boton } from "../componentes/Controles"
-import { Contador, Estallido, Marquesina, Resaltado, Sello, TituloCinetico } from "../componentes/Deco"
-import { ChipCategoria, imagenDe, useGestosPlan } from "../componentes/Tarjetas"
+import { Bloque, Segmentos } from "../componentes/Deco"
+import { Polaroid } from "../componentes/Polaroid"
+import { ChipCategoria, TarjetaPlan, colorDe } from "../componentes/Tarjetas"
 import { ir } from "../router"
 import { useStore, useYo } from "../store"
-import { festejar, vibrar } from "../util/efectos"
+import type { Plan } from "../tipos"
+import { vibrar } from "../util/efectos"
 import { sonar } from "../util/sonidos"
 
 function saludo() {
@@ -19,352 +24,362 @@ function saludo() {
   return "Buenas noches"
 }
 
+const DIA = 86400000
+
+/** «hoy 21:00», «mañana», «en 3 días», «el 12 nov»… */
+function cuandoRelativo(s: string, hoy = new Date()): string {
+  const d = fecha(s)
+  if (!d) return "sin día"
+  const a = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime()
+  const b = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const dias = Math.round((b - a) / DIA)
+  const hora = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })
+  if (dias === 0) return `hoy ${hora}`
+  if (dias === 1) return `mañana ${hora}`
+  if (dias === -1) return "ayer"
+  if (dias > 1 && dias < 7) return `${d.toLocaleDateString("es-AR", { weekday: "long" })} ${hora}`
+  if (dias < 0) return `hace ${-dias} días`
+  return d.toLocaleDateString("es-AR", { day: "numeric", month: "short" })
+}
+
 export function Hoy({ onNuevo }: { onNuevo: () => void }) {
   const planes = useStore((s) => s.planes)
   const votos = useStore((s) => s.votos)
-  const categorias = useStore((s) => s.categorias)
+  const usuarios = useStore((s) => s.usuarios)
   const yo = useYo()
   const ranking = useMemo(() => rankear(planes, votos), [planes, votos])
+  const m = useMemo(() => momentum(planes), [planes])
   const pendientes = ranking.filter((r) => r.plan.estado !== "hecho")
-  const top = pendientes.filter((r) => r.promedio !== null).slice(0, 5)
-  const agenda = ranking.filter((r) => r.plan.estado === "agendado" || r.plan.estado === "en_curso")
-  const hechos = planes.filter((p) => p.estado === "hecho")
-  const sinMiVoto = pendientes.filter((r) => !r.votos.some((v) => v.usuario === yo?.id))
-  const ultimo = [...hechos].sort((a, b) => b.hecho_en.localeCompare(a.hecho_en))[0]
-  const anio = new Date().getFullYear()
+  const porVotar = pendientes.filter((r) => !r.votos.some((v) => v.usuario === yo?.id))
+  const top = pendientes.filter((r) => r.plan.estado === "idea" && r.promedio !== null).slice(0, 3)
+
+  const enCurso = planes.filter((p) => p.estado === "en_curso").sort((a, b) => b.updated.localeCompare(a.updated))
+  const agendados = planes
+    .filter((p) => p.estado === "agendado")
+    .sort((a, b) => (a.cuando || "9999").localeCompare(b.cuando || "9999"))
+  const agenda = [...enCurso, ...agendados]
+  const ahora = agenda[0]
+
+  const hechos = planes.filter((p) => p.estado === "hecho").sort((a, b) => b.hecho_en.localeCompare(a.hecho_en))
+  // el recuerdo más nuevo que todavía no quedó sellado (de los últimos diez)
+  const porSellar = hechos.slice(0, 10).find((p) => !sellado(p, votos, usuarios).completo)
+  const hoy = new Date()
 
   return (
     <div className="hoy">
-      <section className="capitulo portada">
-        <p className="etiqueta">
-          {saludo()}, {yo?.name ?? "che"}
-        </p>
-        <TituloCinetico lineas={["¿Para cuál", "estamos?"]} asoma="entrada" className="portada-titulo" demora={0.1} />
-        <div className="portada-pie">
-          <p>
-            {pendientes.length
-              ? `Hay ${pendientes.length} ${pendientes.length === 1 ? "plan esperando" : "planes esperando"}. ${hechos.length} ya son recuerdo.`
-              : "No hay planes pendientes. ¡A inventar uno!"}
-          </p>
-          <Sello texto="plancitos pendientes ✦ " tam={96} color="var(--limon)">
-            <Contador valor={pendientes.length} />
-          </Sello>
-        </div>
-      </section>
+      <header className="hoy-cabeza">
+        <p className="etiqueta">{hoy.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}</p>
+        <h1 className="hoy-saludo">
+          {saludo()}, {yo?.name ?? "che"}.
+        </h1>
+        <dl className="resumen">
+          <div>
+            <dt>Pendientes</dt>
+            <dd className="num">{pendientes.length}</dd>
+          </div>
+          <a href={porVotar.length ? `#/plan/${porVotar[0].plan.id}` : "#/planes"} className={porVotar.length ? "alerta" : ""}>
+            <dt>Por votar</dt>
+            <dd className="num">{porVotar.length}</dd>
+          </a>
+          <div>
+            <dt>Este mes</dt>
+            <dd className="num">{m.esteMes}</dd>
+          </div>
+        </dl>
+      </header>
 
-      <div className="hoy-cinta">
-        <Marquesina items={categorias.map((c) => `${c.emoji} ${c.nombre.toUpperCase()}`)} color="var(--limon)" />
-      </div>
-
-      {sinMiVoto.length > 0 && (
-        <motion.a
-          href={`#/plan/${sinMiVoto[0].plan.id}`}
-          className="aviso-voto"
-          initial={{ rotate: -6, scale: 0.8, opacity: 0 }}
-          animate={{ rotate: -1.5, scale: 1, opacity: 1 }}
-          whileTap={{ x: 3, y: 3 }}
-        >
-          <b>{sinMiVoto.length}</b>
-          <span>
-            {sinMiVoto.length === 1 ? "plan espera tus ganas" : "planes esperan tus ganas"} <u>votá →</u>
-          </span>
-        </motion.a>
-      )}
-
-      <section className="seccion">
-        <div className="seccion-cabeza">
-          <h2>
-            Las que más <Resaltado>ganas</Resaltado> dan
-          </h2>
-          <a href="#/planes">ver todo</a>
-        </div>
-        {top.length ? (
-          <PilaDeCartas cartas={top} />
+      <Bloque numero="01" titulo="Ahora / en agenda" accion={agenda.length > 1 ? <a href="#/planes?estado=agendado">todo</a> : undefined}>
+        {ahora ? (
+          <>
+            <TicketAhora plan={ahora} />
+            {agenda.length > 1 && (
+              <ul className="agenda">
+                {agenda.slice(1, 4).map((p) => (
+                  <FilaAgenda key={p.id} plan={p} />
+                ))}
+              </ul>
+            )}
+          </>
         ) : (
-          <div className="vacio">
-            <Arte tipo="salida" tam={14} />
-            Todavía no hay planes votados.
-            <Boton onClick={onNuevo}>+ Nuevo plan</Boton>
+          <div className="vacio vacio-chico">
+            <p>Nada agendado ni en curso.</p>
+            <p className="suave">Elijan uno del top o tiren la máquina de abajo.</p>
           </div>
         )}
-      </section>
+      </Bloque>
 
-      <Tragamonedas ranking={ranking} />
-
-      {agenda.length > 0 && (
-        <section className="seccion">
-          <div className="seccion-cabeza">
-            <h2>Agendado y en curso</h2>
+      <Bloque numero="02" titulo="Top de ganas" accion={<a href="#/planes">ver todo</a>}>
+        {porVotar.length > 0 && (
+          <a href={`#/plan/${porVotar[0].plan.id}`} className="aviso-voto">
+            <b className="num">{porVotar.length}</b>
+            <span>{porVotar.length === 1 ? "plan espera tus ganas" : "planes esperan tus ganas"}. Se vota a ciegas.</span>
+            <span aria-hidden>→</span>
+          </a>
+        )}
+        {top.length ? (
+          <div className="lista-planes">
+            {top.map((r, i) => (
+              <TarjetaPlan key={r.plan.id} r={r} puesto={i + 1} compacta />
+            ))}
           </div>
-          <div className="agenda">
-            {agenda.map((r, i) => {
-              const d = r.plan.cuando ? new Date(r.plan.cuando.replace(" ", "T")) : null
-              const cat = categorias.find((c) => c.id === r.plan.categoria)
-              return (
-                <motion.a
-                  key={r.plan.id}
-                  href={`#/plan/${r.plan.id}`}
-                  className="agenda-item"
-                  initial={{ x: -16, opacity: 0 }}
-                  whileInView={{ x: 0, opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05, duration: 0.3 }}
-                  whileTap={{ x: 3, y: 3 }}
-                >
-                  <span className="agenda-fecha" style={{ background: cat?.color }}>
-                    {r.plan.estado === "en_curso" ? (
-                      <small>en curso</small>
-                    ) : d ? (
-                      <>
-                        <b>{d.getDate()}</b>
-                        <small>{d.toLocaleDateString("es-AR", { month: "short" })}</small>
-                      </>
-                    ) : (
-                      <small>sin día</small>
-                    )}
-                  </span>
-                  <span className="agenda-titulo">{r.plan.titulo}</span>
-                  <span className="agenda-flecha">→</span>
-                </motion.a>
-              )
-            })}
+        ) : (
+          <div className="vacio vacio-chico">
+            <p>Todavía no hay ideas votadas.</p>
+            <Boton className="boton-chico" onClick={onNuevo}>
+              + Nuevo plan
+            </Boton>
           </div>
-        </section>
-      )}
+        )}
+      </Bloque>
 
-      <section className="seccion">
-        <div className="seccion-cabeza">
-          <h2>Categorías</h2>
-          <a href="#/mas/categorias">editar</a>
-        </div>
-        <div className="grid2">
-          {categorias.map((c, i) => {
-            const n = planes.filter((p) => p.categoria === c.id && p.estado !== "hecho").length
-            return (
-              <motion.a
-                key={c.id}
-                href={`#/planes?cat=${c.id}`}
-                className="marco mosaico"
-                style={{ "--cap": c.color } as React.CSSProperties}
-                initial={{ opacity: 0, y: 24, rotate: i % 2 ? 2 : -2 }}
-                whileInView={{ opacity: 1, y: 0, rotate: i % 2 ? 1 : -1 }}
-                viewport={{ once: true, margin: "-30px" }}
-                whileTap={{ x: 4, y: 4, boxShadow: "0 0 0 var(--tinta)" }}
-                transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              >
-                <div className="marco-dentro mosaico-dentro">
-                  <Arte tipo={c.personalidad} tam={11} mira={i % 2 ? -1 : 1} />
-                  <span className="mosaico-nombre">{c.nombre}</span>
-                  <span className="etiqueta">( {n} pendientes )</span>
-                </div>
-              </motion.a>
-            )
-          })}
-        </div>
-      </section>
+      <Maquina ranking={ranking} />
 
-      {ultimo && (
-        <section className="seccion">
-          <div className="seccion-cabeza">
-            <h2>El último recuerdo</h2>
-            <a href="#/recuerdos">todos</a>
-          </div>
-          <motion.a
-            href={`#/plan/${ultimo.id}`}
-            className="ventana ventana-grande"
-            initial={{ rotate: -5, y: 30, opacity: 0 }}
-            whileInView={{ rotate: -1.5, y: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ type: "spring", stiffness: 140, damping: 14 }}
-          >
-            <header>
-              <i />
-              <i />
-              <i />
-              <span>{ultimo.titulo.toLowerCase().replace(/\s+/g, "-").slice(0, 28)}.jpg</span>
-            </header>
-            <div className="ventana-foto" style={{ background: categorias.find((c) => c.id === ultimo.categoria)?.color }}>
-              {imagenDe(ultimo) ? <img src={imagenDe(ultimo)} alt="" /> : <Arte tipo={categorias.find((c) => c.id === ultimo.categoria)?.personalidad ?? "salida"} tam={18} />}
+      {porSellar ? (
+        <Bloque numero="04" titulo="Sello pendiente" accion={<a href="#/recuerdos">recuerdos</a>}>
+          <SelloPendiente plan={porSellar} />
+        </Bloque>
+      ) : (
+        hechos[0] && (
+          <Bloque numero="04" titulo="Último recuerdo" accion={<a href="#/recuerdos">todos</a>}>
+            <div className="hoy-polaroid">
+              <Polaroid plan={hechos[0]} grande />
             </div>
-            <p>{ultimo.titulo}</p>
-          </motion.a>
-        </section>
+          </Bloque>
+        )
       )}
 
-      <motion.a
-        href={`#/wrapped/${anio}`}
-        className="cta-wrapped"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        whileTap={{ x: 4, y: 4, boxShadow: "0 0 0 var(--negro)" }}
-      >
-        <span className="etiqueta">[ su año en plancitos ]</span>
-        <b>Wrapped {anio}</b>
-        <span className="cta-wrapped-flecha">▶</span>
-      </motion.a>
+      <section className="momentum" aria-label="Su ritmo">
+        <div>
+          <b className="num">{m.total}</b>
+          <span>hechos juntos</span>
+        </div>
+        <div>
+          <b className="num">{m.mesRecord ? MESES[m.mesRecord.mes].slice(0, 3) : "—"}</b>
+          <span>{m.mesRecord ? `mes récord · ${m.mesRecord.cantidad}` : "mes récord"}</span>
+        </div>
+        <div>
+          <b className="num">{m.rachaMaxima}</b>
+          <span>semanas seguidas, récord</span>
+        </div>
+      </section>
+
+      <a href={`#/wrapped/${hoy.getFullYear()}`} className="cta-wrapped">
+        <span>
+          <span className="etiqueta">su año en plancitos</span>
+          <b>Wrapped {hoy.getFullYear()}</b>
+        </span>
+        <span aria-hidden>→</span>
+      </a>
     </div>
   )
 }
 
-/** El top de ganas como una pila de cartas inclinadas: tocá para pasar, doble toque = ¡estoy para esa! */
-function PilaDeCartas({ cartas }: { cartas: Rankeado[] }) {
-  const [orden, setOrden] = useState(() => cartas.map((c) => c.plan.id))
-  const ids = cartas.map((c) => c.plan.id)
-  // si cambian los planes, se reacomoda sin perder el orden que eligieron
-  const vigente = [...orden.filter((id) => ids.includes(id)), ...ids.filter((id) => !orden.includes(id))]
-  const arriba = vigente[0]
-  const pasar = () => {
-    sonar("swish")
-    setOrden([...vigente.slice(1), vigente[0]])
-  }
+/** El plan de ahora como ticket: categoría, día y hora, y el acceso a sus listas. */
+function TicketAhora({ plan }: { plan: Plan }) {
+  const cat = useStore((s) => s.categorias).find((c) => c.id === plan.categoria)
+  const items = useStore((s) => s.items).filter((i) => i.plan === plan.id)
+  const d = fecha(plan.cuando)
+  const lista = cat?.personalidad === "viaje" ? "valija" : cat?.personalidad === "taller" ? "pasos" : null
+  const ls = lista ? items.filter((i) => i.lista === lista) : []
+  const dias = new Set(items.filter((i) => i.lista === "itinerario").map((i) => i.dia || 1)).size
   return (
-    <div className="pila">
-      <div className="pila-cartas">
-        <AnimatePresence initial={false}>
-          {[...vigente].reverse().map((id) => {
-            const r = cartas.find((c) => c.plan.id === id)!
-            const pos = vigente.indexOf(id)
-            return <Carta key={id} r={r} pos={pos} onPasar={pasar} />
-          })}
-        </AnimatePresence>
+    <a href={`#/plan/${plan.id}`} className="ticket" style={{ "--cc": cat?.color || "var(--amarillo)" } as React.CSSProperties}>
+      <div className="ticket-cabeza">
+        <span>{plan.estado === "en_curso" ? "● En curso" : "Agendado"}</span>
+        <span className="num">
+          {d ? `${d.toLocaleDateString("es-AR", { weekday: "short", day: "2-digit", month: "short" })} · ${d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}` : "sin día"}
+        </span>
       </div>
-      <div className="pila-pie">
-        <span className="etiqueta">tocá para pasar · doble toque: ¡estoy para esa!</span>
-        <Boton className="boton-chico" onClick={() => ir(`/plan/${arriba}`)}>
-          Abrir →
-        </Boton>
-      </div>
-    </div>
-  )
-}
-
-function Carta({ r, pos, onPasar }: { r: Rankeado; pos: number; onPasar: () => void }) {
-  const cat = useStore((s) => s.categorias).find((c) => c.id === r.plan.categoria)
-  const yo = useYo()
-  const gestos = useGestosPlan(r.plan.id)
-  const img = imagenDe(r.plan, "600x0")
-  const mio = r.votos.find((v) => v.usuario === yo?.id)
-  const giros = [-2, 6, -7, 9, -4]
-  const arriba = pos === 0
-  return (
-    <motion.div
-      className={`carta ${arriba ? "arriba" : ""}`}
-      style={{ "--cc": cat?.color, zIndex: 10 - pos } as never}
-      initial={{ y: 60, opacity: 0 }}
-      animate={{ y: pos * 10, x: pos * (pos % 2 ? 14 : -14), rotate: giros[pos % giros.length], opacity: pos > 3 ? 0 : 1, scale: 1 - pos * 0.03 }}
-      exit={{ x: 300, rotate: 30, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 24 }}
-      onPointerDown={arriba ? gestos.onPointerDown : undefined}
-      onPointerMove={arriba ? gestos.onPointerMove : undefined}
-      onPointerUp={arriba ? gestos.onPointerUp : undefined}
-      onPointerCancel={arriba ? gestos.onPointerCancel : undefined}
-      onContextMenu={gestos.onContextMenu}
-      onClick={(e) => arriba && gestos.tocar(e, onPasar)}
-      aria-hidden={!arriba}
-    >
-      <div className="carta-arte">{img ? <img src={img} alt="" draggable={false} /> : <Arte tipo={cat?.personalidad ?? "salida"} tam={17} />}</div>
-      <div className="carta-pie">
-        <ChipCategoria cat={cat} />
-        <h3>{r.plan.titulo}</h3>
-        <div className="carta-ganas">
-          <b>{Math.round(r.promedio ?? 0)}</b>
-          <span className="etiqueta">% de ganas</span>
+      <div className="ticket-cuerpo">
+        <div className="ticket-arte">
+          <Arte tipo={cat?.personalidad ?? "salida"} tam={8} />
+        </div>
+        <div className="ticket-texto">
+          <ChipCategoria cat={cat} />
+          <h3>{plan.titulo}</h3>
+          <p className="suave">{plan.estado === "en_curso" ? "Están en esto ahora." : cuandoRelativo(plan.cuando)}</p>
         </div>
       </div>
-      <AnimatePresence>
-        {mio && mio.ganas >= 92 && (
-          <motion.span className="carta-estallido" initial={{ scale: 0, rotate: -40 }} animate={{ scale: 1, rotate: -10 }} exit={{ scale: 0 }} transition={{ type: "spring", stiffness: 400, damping: 14 }}>
-            <Estallido>¡ESTOY PARA ESA!</Estallido>
-          </motion.span>
+      {lista && ls.length > 0 && (
+        <div className="ticket-progreso">
+          <Segmentos
+            hechos={ls.filter((i) => i.hecho).length}
+            total={ls.length}
+            etiqueta={`${ls.filter((i) => i.hecho).length}/${ls.length} ${lista === "valija" ? "en valija" : "pasos"}`}
+          />
+          {lista === "valija" && dias > 0 && <span className="etiqueta">{dias} {dias === 1 ? "día" : "días"} de itinerario</span>}
+        </div>
+      )}
+      <div className="ticket-pie">
+        <span>{lista === "valija" ? "Valija e itinerario" : lista === "pasos" ? "Pasos y materiales" : "Abrir el plan"}</span>
+        <span aria-hidden>→</span>
+      </div>
+    </a>
+  )
+}
+
+function FilaAgenda({ plan }: { plan: Plan }) {
+  const cat = useStore((s) => s.categorias).find((c) => c.id === plan.categoria)
+  const d = fecha(plan.cuando)
+  return (
+    <li>
+      <a href={`#/plan/${plan.id}`} className="agenda-item">
+        <span className="agenda-fecha num" style={{ background: cat?.color }}>
+          {plan.estado === "en_curso" ? (
+            <small>en curso</small>
+          ) : d ? (
+            <>
+              <b>{String(d.getDate()).padStart(2, "0")}</b>
+              <small>{d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "")}</small>
+            </>
+          ) : (
+            <small>s/d</small>
+          )}
+        </span>
+        <span className="agenda-titulo">{plan.titulo}</span>
+        <span className="agenda-cuando etiqueta">{plan.estado === "en_curso" ? "" : cuandoRelativo(plan.cuando)}</span>
+      </a>
+    </li>
+  )
+}
+
+/**
+ * La máquina «Sorpréndanme»: elegís el filtro, tirás, el rodillo pasa por
+ * los planes con más ganas y frena de a poco (1,4 s) hasta el ganador.
+ * El ganador sale como boleto, con el compromiso a un toque.
+ */
+function Maquina({ ranking }: { ranking: Rankeado[] }) {
+  const categorias = useStore((s) => s.categorias)
+  const [filtro, setFiltro] = useState<FiltroSorteo>("todo")
+  const [girando, setGirando] = useState(false)
+  const [ganador, setGanador] = useState<Rankeado | null>(null)
+  const [visor, setVisor] = useState<Rankeado | null>(null)
+  const relojes = useRef<number[]>([])
+  const candidatos = useMemo(() => candidatosSorteo(ranking, filtro, categorias), [ranking, filtro, categorias])
+
+  const tirar = () => {
+    if (girando || !candidatos.length) return
+    const g = sortear(candidatos)
+    if (!g) return
+    setGanador(null)
+    setGirando(true)
+    // el rodillo muestra los del top de ganas, y el último cuadro es el ganador
+    const rodillo = candidatos.slice(0, Math.max(6, Math.min(candidatos.length, 10)))
+    const demoras = demorasRodillo(16, 1400)
+    let t = 0
+    relojes.current.forEach(clearTimeout)
+    relojes.current = demoras.map((dem, i) => {
+      t += dem
+      return window.setTimeout(() => {
+        if (i === demoras.length - 1) {
+          setVisor(g)
+          setGanador(g)
+          setGirando(false)
+          vibrar([30, 50, 30])
+          sonar("esa")
+        } else {
+          setVisor(rodillo[(i * 3 + 1) % rodillo.length])
+          vibrar(4)
+          sonar("tic")
+        }
+      }, t)
+    })
+  }
+
+  const catDe = (r: Rankeado | null) => categorias.find((c) => c.id === r?.plan.categoria)
+
+  return (
+    <Bloque numero="03" titulo="Sorpréndanme" className="maquina">
+      <div className="maquina-filtros" role="radiogroup" aria-label="Qué tipo de plan">
+        {(Object.keys(FILTROS_SORTEO) as FiltroSorteo[]).map((f) => (
+          <button
+            key={f}
+            role="radio"
+            aria-checked={filtro === f}
+            className="chip"
+            aria-pressed={filtro === f}
+            disabled={girando}
+            onClick={() => {
+              setFiltro(f)
+              setGanador(null)
+              setVisor(null)
+            }}
+          >
+            {FILTROS_SORTEO[f].nombre}
+          </button>
+        ))}
+      </div>
+      <div className={`visor ${girando ? "girando" : ""}`} aria-live="polite">
+        <span className="visor-cat num">{visor ? catDe(visor)?.emoji : "✦"}</span>
+        <span className="visor-texto">{visor ? visor.plan.titulo : candidatos.length ? `${candidatos.length} planes en la máquina` : "No hay planes con este filtro"}</span>
+      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        {ganador && !girando ? (
+          <motion.div key="boleto" className="boleto-ganador" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+            <div className="boleto-ganador-cabeza">
+              <span className="etiqueta">Boleto ganador</span>
+              <span className="num">{ganador.promedio === null ? "¿?" : `${Math.round(ganador.promedio)}%`} ganas</span>
+            </div>
+            <a href={`#/plan/${ganador.plan.id}`} className="boleto-ganador-titulo">
+              {ganador.plan.titulo}
+            </a>
+            <ChipCategoria cat={catDe(ganador)} />
+            <div className="boleto-ganador-botones">
+              <Boton
+                className="boton-grande"
+                onClick={async () => {
+                  await agendarHoy(ganador.plan)
+                  ir(`/plan/${ganador.plan.id}`)
+                }}
+              >
+                ¡Estamos para esa! <small>agendar hoy</small>
+              </Boton>
+              <Boton variante="secundario" onClick={tirar}>
+                1 tiro más
+              </Boton>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div key="palanca" exit={{ opacity: 0 }}>
+            <Boton className="boton-grande palanca" onClick={tirar} disabled={girando || !candidatos.length}>
+              {girando ? "Girando…" : "Tirar"}
+            </Boton>
+          </motion.div>
         )}
       </AnimatePresence>
-      {arriba && (
-        <button
-          className="carta-mas"
-          aria-label="Vista rápida"
-          onClick={(e) => {
-            e.stopPropagation()
-            abrirVistaRapida(r.plan.id)
-          }}
-        >
-          ···
-        </button>
-      )}
-    </motion.div>
+    </Bloque>
   )
 }
 
-/** Sorpréndanme: una tragamonedas de plancitos que frena en uno al azar. */
-function Tragamonedas({ ranking }: { ranking: Rankeado[] }) {
-  const pendientes = ranking.filter((r) => r.plan.estado !== "hecho")
-  const [girando, setGirando] = useState(false)
-  const [elegido, setElegido] = useState<Rankeado | null>(null)
-  const [visible, setVisible] = useState("¿?")
-  const [vuelta, setVuelta] = useState(0)
-
-  const girar = (e: React.MouseEvent) => {
-    if (girando || !pendientes.length) return
-    const ganador = sortear(ranking)
-    if (!ganador) return
-    setGirando(true)
-    setElegido(null)
-    const origen = [e.clientX / innerWidth, e.clientY / innerHeight] as const
-    let paso = 0
-    const total = 20
-    const tick = () => {
-      paso++
-      setVuelta((v) => v + 1)
-      if (paso >= total) {
-        setVisible(ganador.plan.titulo)
-        setElegido(ganador)
-        setGirando(false)
-        vibrar([30, 50, 30])
-        sonar("esa")
-        festejar(origen[0], origen[1], 1.1)
-        return
-      }
-      setVisible(pendientes[Math.floor(Math.random() * pendientes.length)].plan.titulo)
-      vibrar(4)
-      sonar("tic")
-      setTimeout(tick, 45 + Math.pow(paso / total, 3) * 360)
-    }
-    tick()
-  }
-
+/** El recuerdo más nuevo sin sellar, con lo que le falta. */
+function SelloPendiente({ plan }: { plan: Plan }) {
+  const votos = useStore((s) => s.votos)
+  const usuarios = useStore((s) => s.usuarios)
+  const cat = useStore((s) => s.categorias).find((c) => c.id === plan.categoria)
+  const s = sellado(plan, votos, usuarios)
   return (
-    <section className="capitulo traga">
-      <p className="etiqueta">¿No se deciden?</p>
-      <h2 className="titulo traga-titulo">Sorpréndanme</h2>
-      <div className="traga-ventana" aria-live="polite">
-        <AnimatePresence mode="popLayout">
-          <motion.span
-            key={vuelta}
-            className="traga-texto"
-            initial={{ y: girando ? -40 : -16, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 40, opacity: 0 }}
-            transition={{ duration: girando ? 0.05 : 0.25 }}
-          >
-            {visible}
-          </motion.span>
-        </AnimatePresence>
+    <a href={`#/plan/${plan.id}`} className="sello-pendiente" style={{ "--cc": cat?.color || "var(--amarillo)" } as React.CSSProperties}>
+      <div className="sello-pendiente-cabeza">
+        <ChipCategoria cat={cat} />
+        <h3>{plan.titulo}</h3>
       </div>
-      <div className="fila traga-botones">
-        <Boton onClick={girar} disabled={girando || !pendientes.length}>
-          {girando ? "Girando…" : elegido ? "Otra vez" : "¡Tirar!"}
-        </Boton>
-        {elegido && (
-          <>
-            <Boton variante="secundario" onClick={() => ir(`/plan/${elegido.plan.id}`)}>
-              Vamos →
-            </Boton>
-            <Boton variante="secundario" aria-label="Estoy para esa" onClick={(e) => estoyParaEsa(elegido.plan.id, e)}>
-              🙌
-            </Boton>
-          </>
-        )}
-      </div>
-    </section>
+      <Segmentos hechos={s.hechos} total={s.total} etiqueta={`${s.hechos}/${s.total} sellado`} />
+      <ul className="checklist">
+        {s.pasos.map((p) => {
+          const u = usuarios.find((x) => p.id === `puntaje-${x.id}`)
+          return (
+            <li key={p.id} className={p.ok ? "ok" : ""}>
+              <span className="check" aria-hidden style={u ? ({ "--c": colorDe(u, usuarios.indexOf(u)) } as React.CSSProperties) : undefined}>
+                {p.ok ? "✓" : ""}
+              </span>
+              {p.etiqueta}
+            </li>
+          )
+        })}
+      </ul>
+      <span className="sello-pendiente-pie">
+        Completar el recuerdo <span aria-hidden>→</span>
+      </span>
+    </a>
   )
 }

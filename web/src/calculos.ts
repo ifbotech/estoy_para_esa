@@ -1,4 +1,4 @@
-import type { Categoria, Item, Plan, Voto } from "./tipos"
+import type { Categoria, Item, Personalidad, Plan, Usuario, Voto } from "./tipos"
 
 // --- ganas y ranking -------------------------------------------------------
 
@@ -41,9 +41,72 @@ export function rankear(planes: Plan[], votos: Voto[]): Rankeado[] {
     })
 }
 
+// --- simetría de ganas y voto a ciegas -------------------------------------
+
 /**
- * Sorpréndanme: elige un plan pendiente al azar, con más chances para los que
- * tienen más ganas. `azar` es inyectable para los tests.
+ * El promedio esconde si los dos tienen 60 y 60 o 100 y 20. La simetría lo
+ * dice en una palabra. Se calcula sólo cuando votaron los dos.
+ */
+export type Simetria = "match" | "consenso" | "por_amor"
+
+export const SIMETRIAS: Record<Simetria, { etiqueta: string; emoji: string; texto: string }> = {
+  match: { etiqueta: "Match", emoji: "🔥", texto: "Los dos tienen muchas ganas" },
+  consenso: { etiqueta: "Consenso", emoji: "🤝", texto: "Piensan parecido" },
+  por_amor: { etiqueta: "Por amor al arte", emoji: "🎁", texto: "Uno se muere de ganas y el otro acompaña" },
+}
+
+export const UMBRAL_MATCH = 80
+export const UMBRAL_MATCH_TOTAL = 85
+
+export function simetria(votos: Voto[]): Simetria | null {
+  if (votos.length < 2) return null
+  const [a, b] = votos.map((v) => v.ganas)
+  if (a >= UMBRAL_MATCH && b >= UMBRAL_MATCH) return "match"
+  const dif = Math.abs(a - b)
+  if (dif >= 45) return "por_amor"
+  if (dif <= 20) return "consenso"
+  return null
+}
+
+/** ¡Match total! Los dos votaron y los dos están en 85 o más. */
+export function esMatchTotal(votos: Voto[]): boolean {
+  return votos.length >= 2 && votos.every((v) => v.ganas >= UMBRAL_MATCH_TOTAL)
+}
+
+/**
+ * Voto a ciegas: si el otro ya votó y yo todavía no, no veo sus ganas hasta
+ * votar (así no me ancla su número).
+ */
+export function aCiegas(votos: Voto[], yo: string | undefined): boolean {
+  if (!yo) return false
+  return !votos.some((v) => v.usuario === yo) && votos.some((v) => v.usuario !== yo)
+}
+
+// --- sorpréndanme ----------------------------------------------------------
+
+export type FiltroSorteo = "todo" | "casa" | "salir" | "rapido"
+
+export const FILTROS_SORTEO: Record<FiltroSorteo, { nombre: string; personalidades: Personalidad[] | null }> = {
+  todo: { nombre: "Todo", personalidades: null },
+  casa: { nombre: "En casa", personalidades: ["cine", "taller"] },
+  salir: { nombre: "Salir", personalidades: ["cocina", "cafe", "salida", "viaje"] },
+  rapido: { nombre: "Rápido", personalidades: ["cine", "cafe", "cocina", "salida"] },
+}
+
+/** Los candidatos del sorteo: pendientes (no hechos) que entran en el filtro. */
+export function candidatosSorteo(ranking: Rankeado[], filtro: FiltroSorteo, categorias: Categoria[]): Rankeado[] {
+  const ps = FILTROS_SORTEO[filtro].personalidades
+  return ranking.filter((r) => {
+    if (r.plan.estado === "hecho") return false
+    if (!ps) return true
+    const p = categorias.find((c) => c.id === r.plan.categoria)?.personalidad
+    return p ? ps.includes(p) : false
+  })
+}
+
+/**
+ * Elige un plan pendiente al azar, con más chances para los que tienen más
+ * ganas. `azar` es inyectable para los tests.
  */
 export function sortear(ranking: Rankeado[], azar = Math.random): Rankeado | null {
   const candidatos = ranking.filter((r) => r.plan.estado !== "hecho")
@@ -56,6 +119,43 @@ export function sortear(ranking: Rankeado[], azar = Math.random): Rankeado | nul
     if (x <= 0) return candidatos[i]
   }
   return candidatos[candidatos.length - 1]
+}
+
+/**
+ * Las demoras entre cuadro y cuadro del rodillo: arranca rápido y frena de a
+ * poco hasta sumar `total` ms (unos 1,4 s).
+ */
+export function demorasRodillo(pasos = 16, total = 1400): number[] {
+  const crudas = Array.from({ length: pasos }, (_, i) => 1 + Math.pow(i / (pasos - 1), 2.4) * 9)
+  const suma = crudas.reduce((a, b) => a + b, 0)
+  return crudas.map((c) => Math.round((c / suma) * total))
+}
+
+// --- el sello de un recuerdo (cierre) --------------------------------------
+
+export interface PasoSello {
+  id: string
+  etiqueta: string
+  ok: boolean
+}
+
+/**
+ * Un plan hecho queda «100 % sellado» con el puntaje de cada uno, una foto y
+ * una nota o reseña. Lo que falta se muestra para que den ganas de cerrarlo.
+ */
+export function sellado(plan: Plan, votos: Voto[], usuarios: Usuario[]) {
+  const vs = votos.filter((v) => v.plan === plan.id)
+  const pasos: PasoSello[] = [
+    ...usuarios.map((u) => ({
+      id: `puntaje-${u.id}`,
+      etiqueta: `Puntaje ${u.name}`,
+      ok: vs.some((v) => v.usuario === u.id && v.puntaje > 0),
+    })),
+    { id: "foto", etiqueta: "Foto", ok: (plan.fotos?.length ?? 0) > 0 },
+    { id: "nota", etiqueta: "Nota o reseña", ok: Boolean(plan.notas?.trim()) || vs.some((v) => v.resena?.trim()) },
+  ]
+  const hechos = pasos.filter((p) => p.ok).length
+  return { pasos, hechos, total: pasos.length, completo: hechos === pasos.length }
 }
 
 // --- fechas ----------------------------------------------------------------
@@ -77,24 +177,29 @@ export function inicioSemana(d: Date): Date {
 const SEMANA = 7 * 24 * 3600 * 1000
 
 /**
- * La racha: semanas seguidas con al menos un plan hecho. Cuenta hasta esta
- * semana, o hasta la anterior si esta todavía no hicieron nada (no se corta
- * un lunes a la mañana).
+ * Ritmo compartido: lo que ya hicieron juntos, sin castigar las semanas
+ * tranquilas. Nada de «perder la racha»: sólo lo conseguido.
  */
-export function racha(planes: Plan[], hoy = new Date()): number {
-  const semanas = new Set<number>()
-  for (const p of planes) {
-    const d = fecha(p.hecho_en)
-    if (p.estado === "hecho" && d) semanas.add(inicioSemana(d).getTime())
+export function momentum(planes: Plan[], hoy = new Date()) {
+  const fechas = planes.filter((p) => p.estado === "hecho").map((p) => fecha(p.hecho_en)).filter((d): d is Date => Boolean(d))
+  const porMes = new Map<string, { anio: number; mes: number; cantidad: number }>()
+  for (const d of fechas) {
+    const k = `${d.getFullYear()}-${d.getMonth()}`
+    const m = porMes.get(k) ?? { anio: d.getFullYear(), mes: d.getMonth(), cantidad: 0 }
+    m.cantidad++
+    porMes.set(k, m)
   }
-  let s = inicioSemana(hoy).getTime()
-  if (!semanas.has(s)) s -= SEMANA
-  let n = 0
-  while (semanas.has(s)) {
-    n++
-    s = inicioSemana(new Date(s - SEMANA / 2)).getTime()
+  let mesRecord: { anio: number; mes: number; cantidad: number } | null = null
+  for (const m of porMes.values()) {
+    if (!mesRecord || m.cantidad > mesRecord.cantidad || (m.cantidad === mesRecord.cantidad && m.anio * 12 + m.mes > mesRecord.anio * 12 + mesRecord.mes)) mesRecord = m
   }
-  return n
+  return {
+    total: fechas.length,
+    esteMes: porMes.get(`${hoy.getFullYear()}-${hoy.getMonth()}`)?.cantidad ?? 0,
+    esteAnio: fechas.filter((d) => d.getFullYear() === hoy.getFullYear()).length,
+    mesRecord,
+    rachaMaxima: rachaMaxima(fechas),
+  }
 }
 
 /** La racha más larga de semanas seguidas dentro de un conjunto de fechas. */
@@ -113,6 +218,96 @@ export function rachaMaxima(fechas: Date[]): number {
   return mejor
 }
 
+// --- curaduría de pareja ---------------------------------------------------
+
+/** Barrios donde comieron, tomaron algo o salieron, del más visitado al menos. */
+export function barriosConquistados(lugares: Plan[]): { barrio: string; cantidad: number }[] {
+  const barrios = new Map<string, { barrio: string; cantidad: number }>()
+  for (const p of lugares) {
+    if (p.estado !== "hecho") continue
+    const b = (p.datos?.barrio ?? "").trim()
+    if (!b) continue
+    const k = b.toLowerCase()
+    const x = barrios.get(k) ?? { barrio: b, cantidad: 0 }
+    x.cantidad++
+    barrios.set(k, x)
+  }
+  return [...barrios.values()].sort((a, b) => b.cantidad - a.cantidad || a.barrio.localeCompare(b.barrio))
+}
+
+export interface Curaduria {
+  /** Promedio de estrellas de cada uno, sólo en pelis que puntuó. */
+  porPersona: { usuario: string; promedio: number; cantidad: number }[]
+  /** Quién puntúa más bajo (si la diferencia es de al menos media estrella). */
+  masDuro: { usuario: string; diferencia: number } | null
+  /** Coincidencia crítica: 100 = puntúan igual; 0 = 5 estrellas de distancia. */
+  coincidencia: number | null
+  mayorAcuerdo: { plan: Plan; puntajes: number[] } | null
+  mayorDesacuerdo: { plan: Plan; puntajes: number[]; diferencia: number } | null
+  /** Su promedio contra el de Letterboxd en las pelis que tienen los dos. */
+  vsLetterboxd: { nuestro: number; letterboxd: number; diferencia: number; cantidad: number } | null
+}
+
+export function curaduriaPelis(pelis: Plan[], votos: Voto[]): Curaduria {
+  const hechas = pelis.filter((p) => p.estado === "hecho")
+  const ids = new Set(hechas.map((p) => p.id))
+  const puntuados = votos.filter((v) => ids.has(v.plan) && v.puntaje > 0)
+
+  const porUsuario = new Map<string, number[]>()
+  for (const v of puntuados) porUsuario.set(v.usuario, [...(porUsuario.get(v.usuario) ?? []), v.puntaje])
+  const porPersona = [...porUsuario].map(([usuario, l]) => ({ usuario, promedio: l.reduce((a, b) => a + b, 0) / l.length, cantidad: l.length }))
+
+  let masDuro: Curaduria["masDuro"] = null
+  if (porPersona.length >= 2) {
+    const orden = [...porPersona].sort((a, b) => a.promedio - b.promedio)
+    const dif = orden[orden.length - 1].promedio - orden[0].promedio
+    if (dif >= 0.5) masDuro = { usuario: orden[0].usuario, diferencia: dif }
+  }
+
+  let mayorAcuerdo: Curaduria["mayorAcuerdo"] = null
+  let mayorDesacuerdo: Curaduria["mayorDesacuerdo"] = null
+  let difAcuerdo = Infinity
+  let sumaDif = 0
+  let pares = 0
+  for (const p of hechas) {
+    const ps = puntuados.filter((v) => v.plan === p.id).map((v) => v.puntaje)
+    if (ps.length < 2) continue
+    const dif = Math.max(...ps) - Math.min(...ps)
+    const prom = ps.reduce((a, b) => a + b, 0) / ps.length
+    sumaDif += dif
+    pares++
+    const promAcuerdo = mayorAcuerdo ? mayorAcuerdo.puntajes.reduce((a, b) => a + b, 0) / mayorAcuerdo.puntajes.length : -1
+    if (dif < difAcuerdo || (dif === difAcuerdo && prom > promAcuerdo)) {
+      difAcuerdo = dif
+      mayorAcuerdo = { plan: p, puntajes: ps }
+    }
+    if (!mayorDesacuerdo || dif > mayorDesacuerdo.diferencia) mayorDesacuerdo = { plan: p, puntajes: ps, diferencia: dif }
+  }
+  if (mayorDesacuerdo && mayorDesacuerdo.diferencia < 1) mayorDesacuerdo = null
+
+  let suma = 0
+  let sumaLb = 0
+  let n = 0
+  for (const p of hechas) {
+    const lb = p.datos?.lbPromedio
+    const ps = puntuados.filter((v) => v.plan === p.id).map((v) => v.puntaje)
+    if (!lb || !ps.length) continue
+    suma += ps.reduce((a, b) => a + b, 0) / ps.length
+    sumaLb += lb
+    n++
+  }
+  const vsLetterboxd = n ? { nuestro: suma / n, letterboxd: sumaLb / n, diferencia: (suma - sumaLb) / n, cantidad: n } : null
+
+  return {
+    porPersona,
+    masDuro,
+    coincidencia: pares ? Math.round(100 - (sumaDif / pares / 5) * 100) : null,
+    mayorAcuerdo,
+    mayorDesacuerdo,
+    vsLetterboxd,
+  }
+}
+
 // --- el Wrapped ------------------------------------------------------------
 
 export interface Resumen {
@@ -125,6 +320,7 @@ export interface Resumen {
   pelis: { cantidad: number; promedio: number | null; mejor: Plan | null; posters: string[] }
   viajes: { cantidad: number; exterior: number; pctExterior: number; paises: string[]; dias: number }
   lugares: { cantidad: number; cafes: number; comidas: number; barrios: { barrio: string; cantidad: number }[] }
+  curaduria: Curaduria
   taller: { cantidad: number; pasos: number }
   masGanas: { plan: Plan; promedio: number } | null
   desacuerdo: { plan: Plan; diferencia: number; votos: Voto[] } | null
@@ -195,16 +391,11 @@ export function resumenAnual(
   }
 
   const lugaresHechos = hechos.filter((p) => ["cocina", "cafe", "salida"].includes(pers(p) ?? ""))
-  const barrios = new Map<string, number>()
-  for (const p of lugaresHechos) {
-    const b = (p.datos?.barrio ?? "").trim()
-    if (b) barrios.set(b, (barrios.get(b) ?? 0) + 1)
-  }
   const lugares = {
     cantidad: lugaresHechos.length,
     cafes: lugaresHechos.filter((p) => pers(p) === "cafe").length,
     comidas: lugaresHechos.filter((p) => pers(p) === "cocina").length,
-    barrios: [...barrios].map(([barrio, cantidad]) => ({ barrio, cantidad })).sort((a, b) => b.cantidad - a.cantidad),
+    barrios: barriosConquistados(lugaresHechos),
   }
 
   const tallerHechos = hechos.filter((p) => pers(p) === "taller")
@@ -262,6 +453,7 @@ export function resumenAnual(
     pelis,
     viajes,
     lugares,
+    curaduria: curaduriaPelis(pelisHechas, votos),
     taller,
     masGanas,
     desacuerdo,

@@ -1,13 +1,13 @@
 import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { MESES, resumenAnual, type Resumen } from "../calculos"
+import { MESES, momentum, resumenAnual, type Resumen } from "../calculos"
 import { Arte } from "../componentes/Arte"
 import { Boton } from "../componentes/Controles"
 import { Contador } from "../componentes/Deco"
 import { colorDe } from "../componentes/Tarjetas"
 import { ir } from "../router"
 import { useStore } from "../store"
-import type { Usuario } from "../tipos"
+import type { Plan, Usuario } from "../tipos"
 import { festejoGrande } from "../util/efectos"
 
 const DURACION = 6500
@@ -26,7 +26,7 @@ export function Wrapped({ anio }: { anio: number }) {
   const items = useStore((s) => s.items)
   const usuarios = useStore((s) => s.usuarios)
   const r = useMemo(() => resumenAnual(anio, planes, votos, categorias, items), [anio, planes, votos, categorias, items])
-  const diapos = useMemo(() => armarDiapos(r, usuarios), [r, usuarios])
+  const diapos = useMemo(() => armarDiapos(r, usuarios, planes), [r, usuarios, planes])
   const [i, setI] = useState(0)
   const [pausa, setPausa] = useState(false)
   const inicio = useRef(Date.now())
@@ -87,10 +87,10 @@ export function Wrapped({ anio }: { anio: number }) {
         <motion.div
           key={diapo.id + anio}
           className="w-diapo"
-          initial={{ opacity: 0, scale: 0.94, filter: "blur(10px)" }}
-          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-          exit={{ opacity: 0, scale: 1.06, filter: "blur(10px)" }}
-          transition={{ duration: 0.45 }}
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 }}
+          transition={{ duration: 0.22, ease: [0.25, 1, 0.5, 1] }}
         >
           {diapo.contenido}
         </motion.div>
@@ -100,14 +100,14 @@ export function Wrapped({ anio }: { anio: number }) {
 }
 
 const aparece = (d = 0) => ({
-  initial: { opacity: 0, y: 40 },
+  initial: { opacity: 0, y: 14 },
   animate: { opacity: 1, y: 0 },
-  transition: { type: "spring" as const, stiffness: 180, damping: 16, delay: d },
+  transition: { duration: 0.3, ease: [0.25, 1, 0.5, 1] as const, delay: d * 0.6 },
 })
 
 function Gigante({ children, d = 0.2, chico = false }: { children: ReactNode; d?: number; chico?: boolean }) {
   return (
-    <motion.div className={`w-gigante ${chico ? "chico" : ""}`} initial={{ scale: 0.2, rotate: -12, opacity: 0 }} animate={{ scale: 1, rotate: -3, opacity: 1 }} transition={{ type: "spring", stiffness: 160, damping: 11, delay: d }}>
+    <motion.div className={`w-gigante num ${chico ? "chico" : ""}`} {...aparece(d)}>
       {children}
     </motion.div>
   )
@@ -117,7 +117,7 @@ function nombreDe(usuarios: Usuario[], id: string) {
   return usuarios.find((u) => u.id === id)?.name ?? "Alguien"
 }
 
-function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
+function armarDiapos(r: Resumen, usuarios: Usuario[], planes: Plan[]): Diapo[] {
   const d: Diapo[] = []
   const anio = r.anio
 
@@ -129,11 +129,11 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
         <motion.p className="w-chico" {...aparece(0.1)}>
           {usuarios.map((u) => u.name).join(" & ")} presentan
         </motion.p>
-        <motion.div className="w-anio" initial={{ scale: 3, opacity: 0, rotate: 20 }} animate={{ scale: 1, opacity: 1, rotate: -6 }} transition={{ type: "spring", stiffness: 90, damping: 12, delay: 0.3 }}>
+        <motion.div className="w-anio num" {...aparece(0.3)}>
           {anio}
         </motion.div>
         <motion.h1 className="w-titulo" {...aparece(0.8)}>
-          Su año en <span className="serif">plancitos</span>
+          Su año en plancitos
         </motion.h1>
         <motion.p className="w-chico" {...aparece(1.4)}>
           tocá para seguir →
@@ -202,7 +202,7 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
                 <span className="w-cat-pista">
                   <motion.span
                     className="w-cat-relleno"
-                    style={{ background: c.categoria.color || "var(--a1)" }}
+                    style={{ background: c.categoria.color || "var(--amarillo)" }}
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.max(6, c.pct)}%` }}
                     transition={{ type: "spring", stiffness: 60, damping: 14, delay: 0.6 + j * 0.15 }}
@@ -223,10 +223,7 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
       contenido: (
         <div className="w-columna">
           <motion.h1 className="w-titulo" {...aparece(0.2)}>
-            <span className="serif" style={{ textTransform: "capitalize" }}>
-              {MESES[r.mesTop]}
-            </span>{" "}
-            fue el mes más intenso
+            <span style={{ textTransform: "capitalize" }}>{MESES[r.mesTop]}</span> fue el mes más intenso
           </motion.h1>
           <motion.p className="w-texto" {...aparece(0.4)}>
             {r.porMes[r.mesTop]} plancitos en un solo mes.
@@ -256,15 +253,7 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
           <div className="w-centro">
             <div className="w-posters">
               {r.pelis.posters.map((p, j) => (
-                <motion.img
-                  key={p + j}
-                  src={p}
-                  alt=""
-                  initial={{ y: -600, rotate: (j % 2 ? 1 : -1) * (10 + j * 3), opacity: 0 }}
-                  animate={{ y: 0, rotate: (j % 2 ? 1 : -1) * (4 + (j % 4) * 3), opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 70, damping: 11, delay: 0.2 + j * 0.12 }}
-                  style={{ left: `${8 + ((j * 23) % 70)}%`, top: `${4 + ((j * 37) % 40)}%` }}
-                />
+                <motion.img key={p + j} src={p} alt="" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 + j * 0.06 }} />
               ))}
             </div>
             <motion.p className="w-chico" {...aparece(0.3)}>
@@ -295,6 +284,59 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
       })
     }
 
+    const c = r.curaduria
+    if (c.porPersona.length >= 2 && (c.masDuro || c.mayorAcuerdo || c.vsLetterboxd)) {
+      d.push({
+        id: "curaduria",
+        fondo: "w-f4",
+        contenido: (
+          <div className="w-columna">
+            <motion.p className="w-chico" {...aparece(0.1)}>
+              Curaduría de pareja
+            </motion.p>
+            {c.coincidencia !== null && (
+              <>
+                <Gigante d={0.3} chico>
+                  <Contador valor={c.coincidencia} />%
+                </Gigante>
+                <motion.h1 className="w-titulo" {...aparece(0.6)}>
+                  de coincidencia crítica
+                </motion.h1>
+              </>
+            )}
+            <div className="w-tabla">
+              {c.porPersona.map((p, j) => (
+                <motion.div key={p.usuario} className="w-tabla-fila" {...aparece(0.9 + j * 0.15)}>
+                  <span>{nombreDe(usuarios, p.usuario)}</span>
+                  <b className="num">★ {p.promedio.toFixed(1).replace(".", ",")}</b>
+                </motion.div>
+              ))}
+              {c.vsLetterboxd && (
+                <motion.div className="w-tabla-fila" {...aparece(1.3)}>
+                  <span>Letterboxd</span>
+                  <b className="num">★ {c.vsLetterboxd.letterboxd.toFixed(1).replace(".", ",")}</b>
+                </motion.div>
+              )}
+            </div>
+            <motion.p className="w-texto" {...aparece(1.6)}>
+              {c.masDuro ? (
+                <>
+                  <b>{nombreDe(usuarios, c.masDuro.usuario)}</b> es más duro puntuando.{" "}
+                </>
+              ) : (
+                "Puntúan parejo. "
+              )}
+              {c.mayorAcuerdo && (
+                <>
+                  Donde más coincidieron: <b>{c.mayorAcuerdo.plan.titulo}</b>.
+                </>
+              )}
+            </motion.p>
+          </div>
+        ),
+      })
+    }
+
     if (r.viajes.cantidad) {
       d.push({
         id: "viajes",
@@ -314,7 +356,7 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
             {r.viajes.paises.length > 0 && (
               <div className="w-chips">
                 {r.viajes.paises.map((p, j) => (
-                  <motion.span key={p} className="w-sello" initial={{ scale: 3, opacity: 0, rotate: 30 }} animate={{ scale: 1, opacity: 1, rotate: (j % 2 ? 8 : -8) }} transition={{ delay: 1.3 + j * 0.25, type: "spring", stiffness: 300, damping: 14 }}>
+                  <motion.span key={p} className="w-sello" {...aparece(1.3 + j * 0.2)}>
                     {p}
                   </motion.span>
                 ))}
@@ -343,13 +385,21 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
             </motion.h1>
             <motion.p className="w-texto" {...aparece(1.1)}>
               {r.lugares.cafes} cafecitos · {r.lugares.comidas} comidas
-              {r.lugares.barrios[0] && (
-                <>
-                  <br />
-                  Su barrio: <b>{r.lugares.barrios[0].barrio}</b>
-                </>
-              )}
             </motion.p>
+            {r.lugares.barrios.length > 0 && (
+              <>
+                <motion.p className="w-chico" {...aparece(1.4)}>
+                  {r.lugares.barrios.length} {r.lugares.barrios.length === 1 ? "barrio conquistado" : "barrios conquistados"}
+                </motion.p>
+                <div className="w-chips">
+                  {r.lugares.barrios.slice(0, 8).map((b, j) => (
+                    <motion.span key={b.barrio} className="w-sello" {...aparece(1.6 + j * 0.12)}>
+                      {b.barrio} <span className="num">×{b.cantidad}</span>
+                    </motion.span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         ),
       })
@@ -427,7 +477,7 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
             </motion.h1>
             <div className="w-versus">
               {des.votos.map((v, j) => (
-                <motion.span key={v.id} initial={{ x: j ? 200 : -200, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 120, damping: 10, delay: 0.7 }}>
+                <motion.span key={v.id} {...aparece(0.7 + j * 0.2)}>
                   {nombreDe(usuarios, v.usuario)} <b>{Math.round(v.ganas)}%</b>
                 </motion.span>
               ))}
@@ -461,23 +511,45 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
       })
     }
 
+    const m = momentum(planes)
     d.push({
-      id: "racha",
+      id: "ritmo",
       fondo: "w-f1",
       contenido: (
-        <div className="w-centro">
-          <motion.div className="w-fuego" initial={{ scale: 0 }} animate={{ scale: [0, 1.4, 1] }} transition={{ duration: 0.8, delay: 0.2 }}>
-            🔥
-          </motion.div>
-          <Gigante d={0.5}>
-            <Contador valor={r.rachaMaxima} />
-          </Gigante>
-          <motion.h1 className="w-titulo" {...aparece(0.9)}>
-            {r.rachaMaxima === 1 ? "semana" : "semanas seguidas"} haciendo planes
-          </motion.h1>
-          <motion.p className="w-texto" {...aparece(1.3)}>
-            Sumaron {r.ideasNuevas} ideas nuevas y {r.fotos} fotos.
+        <div className="w-columna">
+          <motion.p className="w-chico" {...aparece(0.1)}>
+            Su ritmo, desde el primer plan
           </motion.p>
+          <Gigante d={0.3}>
+            <Contador valor={m.total} />
+          </Gigante>
+          <motion.h1 className="w-titulo" {...aparece(0.6)}>
+            planes hechos juntos
+          </motion.h1>
+          <div className="w-tabla">
+            {m.mesRecord && (
+              <motion.div className="w-tabla-fila" {...aparece(0.9)}>
+                <span>Mes récord</span>
+                <b className="num" style={{ textTransform: "capitalize" }}>
+                  {MESES[m.mesRecord.mes]} {m.mesRecord.anio} · {m.mesRecord.cantidad}
+                </b>
+              </motion.div>
+            )}
+            <motion.div className="w-tabla-fila" {...aparece(1.05)}>
+              <span>Mejor racha</span>
+              <b className="num">
+                {m.rachaMaxima} {m.rachaMaxima === 1 ? "semana" : "semanas seguidas"}
+              </b>
+            </motion.div>
+            <motion.div className="w-tabla-fila" {...aparece(1.2)}>
+              <span>Ideas nuevas en {anio}</span>
+              <b className="num">{r.ideasNuevas}</b>
+            </motion.div>
+            <motion.div className="w-tabla-fila" {...aparece(1.35)}>
+              <span>Fotos en {anio}</span>
+              <b className="num">{r.fotos}</b>
+            </motion.div>
+          </div>
         </div>
       ),
     })
@@ -489,11 +561,11 @@ function armarDiapos(r: Resumen, usuarios: Usuario[]): Diapo[] {
     contenido: (
       <div className="w-centro w-fin">
         <motion.h1 className="w-titulo grande" {...aparece(0.2)}>
-          ¿Para cuál están en <span className="serif">{anio + 1}</span>?
+          ¿Para cuál están en {anio + 1}?
         </motion.h1>
         <motion.div className="w-botones" {...aparece(0.8)} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
           <Boton onClick={() => ir("/")}>Ir a los planes</Boton>
-          <Boton variante="fantasma" onClick={() => ir(`/wrapped/${anio - 1}`)}>
+          <Boton variante="secundario" onClick={() => ir(`/wrapped/${anio - 1}`)}>
             Ver {anio - 1}
           </Boton>
         </motion.div>

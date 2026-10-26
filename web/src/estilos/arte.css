@@ -1,4 +1,5 @@
-/* Personajes-objeto (SVG). El tamaño lo da el ancho del span. */
+/* Los personajes-objeto (Arte.tsx). Desde la v3 son un detalle quieto:
+   viven adentro de un bloque y no parpadean, ni flotan, ni caminan. */
 
 .personaje {
   display: inline-block;
@@ -9,83 +10,4 @@
   width: 100%;
   height: auto;
   overflow: visible;
-}
-
-/* parpadeo: los ojos se aplastan un instante cada ~5 s */
-.personaje .ojo,
-.asoma .ojo {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: parpadeo 5s infinite;
-  animation-delay: var(--parpadeo, 0s);
-}
-@keyframes parpadeo {
-  0%, 46%, 52%, 100% { transform: scaleY(1); }
-  49% { transform: scaleY(0.1); }
-}
-
-/* los pies se balancean un poquito */
-.personaje .pie {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: paso calc(1.4s / max(var(--mov), 0.1)) ease-in-out infinite;
-}
-.personaje .pie-d { animation-delay: calc(-0.7s / max(var(--mov), 0.1)); }
-@keyframes paso {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
-}
-
-.personaje .vapor {
-  animation: vapor calc(2.4s / max(var(--mov), 0.1)) ease-in-out infinite;
-}
-@keyframes vapor {
-  0%, 100% { opacity: 0.4; transform: translateY(2px); }
-  50% { opacity: 1; transform: translateY(-3px); }
-}
-
-/* --- flotantes que se revolean --- */
-.flotante {
-  position: absolute;
-  touch-action: none;
-  cursor: grab;
-  z-index: 2;
-}
-.flota {
-  animation: flotar calc(5s / max(var(--mov), 0.1)) ease-in-out infinite;
-}
-@keyframes flotar {
-  0%, 100% { transform: translateY(0) rotate(-4deg); }
-  50% { transform: translateY(-8px) rotate(4deg); }
-}
-
-/* --- el que se asoma por arriba de un título, a la derecha --- */
-.t-ancla { position: relative; display: block; }
-.t-ancla .t-texto { position: relative; z-index: 1; }
-.asoma {
-  position: absolute;
-  left: var(--asoma-x, 80%);
-  bottom: calc(100% - 0.14em);
-  translate: -50% 0;
-  height: 0.78em;
-  overflow: hidden;
-  z-index: 0;
-  pointer-events: none;
-}
-.asoma-cuerpo {
-  display: block;
-  line-height: 0;
-  animation: asomarse calc(5s / max(var(--mov), 0.1)) cubic-bezier(.25, 1, .5, 1) 0.4s infinite both;
-}
-.asoma-cuerpo svg { width: 100%; height: auto; }
-@keyframes asomarse {
-  0% { transform: translateY(100%); }
-  14%, 72% { transform: translateY(8%); }
-  78% { transform: translateY(18%); }
-  100% { transform: translateY(100%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .personaje *, .flota, .asoma-cuerpo, .asoma .ojo { animation: none !important; }
-  .asoma-cuerpo { transform: translateY(8%); }
 }

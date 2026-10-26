@@ -1,4 +1,3 @@
-import { motion } from "motion/react"
 import { useState } from "react"
 import { Arte } from "../../componentes/Arte"
 import { avisar } from "../../componentes/Avisos"
@@ -7,7 +6,7 @@ import { PERSONALIDADES } from "../../personalidades"
 import { borrarCategoria, guardarCategoria, useStore } from "../../store"
 import type { Categoria, Personalidad } from "../../tipos"
 
-const VACIA: Partial<Categoria> = { nombre: "", emoji: "✨", personalidad: "salida", color: "#ff4fa3" }
+const VACIA: Partial<Categoria> = { nombre: "", emoji: "✨", personalidad: "salida", color: "#F5D547" }
 
 function slug(s: string) {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "cat"
@@ -46,7 +45,7 @@ export function Categorias() {
       <p className="suave">La personalidad define cómo se ve y qué funciones especiales trae (Letterboxd, mapa, itinerario, pasos…).</p>
       <div className="lista-cats">
         {categorias.map((c, i) => (
-          <motion.div key={c.id} layout className="cat-fila" style={{ "--cap": c.color || "var(--a3)" } as React.CSSProperties}>
+          <div key={c.id} className="cat-fila" style={{ "--cc": c.color || "var(--amarillo)" } as React.CSSProperties}>
             <Arte tipo={c.personalidad} tam={5} />
             <div className="cat-fila-texto">
               <b>
@@ -67,7 +66,7 @@ export function Categorias() {
                 ✎
               </button>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
       <Boton className="boton-grande" onClick={() => setEditando({ ...VACIA })}>
@@ -89,7 +88,7 @@ export function Categorias() {
             </div>
             <label className="campo-etiqueta">
               <span>Color</span>
-              <input className="campo campo-color" type="color" value={editando.color || "#ff4fa3"} onChange={(e) => setEditando({ ...editando, color: e.target.value })} />
+              <input className="campo campo-color" type="color" value={editando.color || "#F5D547"} onChange={(e) => setEditando({ ...editando, color: e.target.value })} />
             </label>
             <p className="etiqueta">Personalidad</p>
             <div className="grid2">
@@ -97,7 +96,7 @@ export function Categorias() {
                 <button
                   key={p}
                   className={`ficha nuevo-cat-ficha ${editando.personalidad === p ? "elegido" : ""}`}
-                  style={{ "--cap": editando.color || "var(--a3)" } as React.CSSProperties}
+                  style={{ "--cc": editando.color || "var(--amarillo)" } as React.CSSProperties}
                   onClick={() => setEditando({ ...editando, personalidad: p })}
                 >
                   <Arte tipo={p} tam={7} />

@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from "motion/react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Avisos, avisar } from "./componentes/Avisos"
 import { BarraNav } from "./componentes/BarraNav"
-import { Fondo, TituloCinetico } from "./componentes/Deco"
+import { EnVivo } from "./componentes/Deco"
 import { NuevoPlan } from "./pantallas/NuevoPlan"
 import { VistaRapida } from "./componentes/VistaRapida"
 import { Hoy } from "./pantallas/Hoy"
@@ -15,14 +15,12 @@ import { Wrapped } from "./pantallas/Wrapped"
 import { enArchivo, pb } from "./pb"
 import { useRuta } from "./router"
 import { iniciar, useStore } from "./store"
-import { racha } from "./calculos"
+import { momentum } from "./calculos"
 import { volver } from "./router"
-import { aplicarTokens } from "./temas"
 
 export function App() {
   const [logueado, setLogueado] = useState(pb.authStore.isValid)
   const listo = useStore((s) => s.listo)
-  const temas = useStore((s) => s.temas)
   const ruta = useRuta()
   const [nuevo, setNuevo] = useState(false)
 
@@ -39,18 +37,11 @@ export function App() {
     pb.collection("users").authRefresh().catch(() => {})
   }, [logueado])
 
-  // El tema compartido: el activo del archivo (en vivo, si el otro lo cambia).
-  useEffect(() => {
-    const activo = temas.find((t) => t.activo)
-    if (activo) aplicarTokens(activo.tokens)
-  }, [temas])
-
   useEffect(() => pb.authStore.onChange(() => setLogueado(pb.authStore.isValid)), [])
 
   if (!logueado)
     return (
       <>
-        <Fondo />
         <Login onEntrar={() => setLogueado(true)} />
         <Avisos />
       </>
@@ -59,9 +50,12 @@ export function App() {
   if (!listo)
     return (
       <>
-        <Fondo />
-        <div className="cargando">
-          <TituloCinetico lineas={["Cargando", "plancitos"]} asoma="entrada" />
+        <div className="cargando" role="status">
+          <span className="cargando-marca">ESTOY PARA ESA ✦</span>
+          <span className="cargando-barra" aria-hidden>
+            <i />
+          </span>
+          <span className="etiqueta">trayendo los plancitos…</span>
         </div>
         <Avisos />
       </>
@@ -93,7 +87,6 @@ export function App() {
 
   return (
     <>
-      <Fondo />
       {enArchivo && (
         <div className="cinta-archivo">
           📼 Versión archivada · <a href="../../">ir a la actual</a>
@@ -104,10 +97,10 @@ export function App() {
         <motion.main
           key={ruta.partes.slice(0, 2).join("/")}
           className={`pantalla ${pantallaCompleta ? "completa" : ""}`}
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25, ease: [0.25, 1, 0.5, 1] }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.12 }}
         >
           {pantalla}
         </motion.main>
@@ -122,25 +115,27 @@ export function App() {
 
 const NOMBRES: Record<string, string> = { planes: "Planes", recuerdos: "Recuerdos", mas: "Más", plan: "Plan" }
 
-/** La barra de arriba, enmarcada: la marca y la racha, o volver en las internas. */
+/** La barra de arriba: la marca (o volver en las internas), el en vivo y lo hecho. */
 function BarraSuperior({ seccion, sub }: { seccion: string; sub?: string }) {
   const planes = useStore((s) => s.planes)
+  const conectado = useStore((s) => s.conectado)
+  const m = useMemo(() => momentum(planes), [planes])
   const interna = seccion === "plan" || (seccion === "mas" && sub)
   return (
     <header className="barra">
       {interna ? (
         <button className="barra-volver" onClick={() => volver(seccion === "plan" ? "/planes" : "/mas")} aria-label="Volver">
-          ←
+          ← <span>{NOMBRES[seccion === "plan" ? "planes" : "mas"]}</span>
         </button>
       ) : (
         <a className="barra-marca" href="#/">
-          estoy para <b>esa</b>
+          ESTOY PARA ESA <b>✦</b>
         </a>
       )}
       <div className="barra-der">
-        {interna && <span className="barra-chip">{NOMBRES[seccion] ?? ""}</span>}
-        <span className="barra-chip" title="Semanas seguidas haciendo algo">
-          🔥 {racha(planes)} sem
+        <EnVivo conectado={conectado} />
+        <span className="barra-chip num" title="Planes que ya hicieron juntos">
+          {m.total} hechos
         </span>
       </div>
     </header>

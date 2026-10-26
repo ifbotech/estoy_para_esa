@@ -2,13 +2,18 @@ import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
 import { avisar } from "../componentes/Avisos"
 import { Boton } from "../componentes/Controles"
+import { Bloque, Segmentos } from "../componentes/Deco"
 import { urlArchivo } from "../pb"
 import { borrarItem, crearItem, editarItem, editarPlan, useStore } from "../store"
 import type { Lista, Plan } from "../tipos"
 import { festejar, vibrar } from "../util/efectos"
 import { achicar, elegirArchivos } from "../util/imagen"
 
-/** Una lista con tildes: pasos, materiales, valija, itinerario, qué pedir. */
+/**
+ * Una lista con tildes: pasos, materiales, valija, itinerario, qué pedir.
+ * El itinerario se agrupa por día y se lee bien sin señal. En «Qué pedir»,
+ * una vez hecho el plan, cada plato se marca para repetir o para pasar.
+ */
 export function ListaItems({ plan, lista, nombre, placeholder }: { plan: Plan; lista: Lista; nombre: string; placeholder: string }) {
   const todos = useStore((s) => s.items)
   const items = todos.filter((i) => i.plan === plan.id && i.lista === lista)
@@ -16,6 +21,7 @@ export function ListaItems({ plan, lista, nombre, placeholder }: { plan: Plan; l
   const [dia, setDia] = useState(1)
   const hechos = items.filter((i) => i.hecho).length
   const conDia = lista === "itinerario"
+  const veredictos = lista === "pedir" && plan.estado === "hecho"
 
   const agregar = (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,69 +31,75 @@ export function ListaItems({ plan, lista, nombre, placeholder }: { plan: Plan; l
   }
 
   const ordenados = conDia ? [...items].sort((a, b) => a.dia - b.dia || a.orden - b.orden) : items
+  const etiqueta =
+    lista === "valija" ? `${hechos}/${items.length} en valija` : lista === "pasos" ? `${hechos}/${items.length} pasos` : veredictos ? `${hechos}/${items.length} probados` : `${hechos}/${items.length}`
 
   return (
-    <section className="seccion bloque">
-      <div className="seccion-cabeza">
-        <h2>{nombre}</h2>
-        {items.length > 0 && !conDia && (
-          <span className="etiqueta">
-            {hechos}/{items.length}
-          </span>
-        )}
-      </div>
-      {items.length > 0 && !conDia && (
-        <div className="progreso">
-          <motion.div className="progreso-relleno" animate={{ width: `${(hechos / items.length) * 100}%` }} transition={{ type: "spring", stiffness: 120, damping: 18 }} />
-        </div>
-      )}
+    <Bloque titulo={nombre} className={`lista lista-${lista}`} accion={items.length > 0 && !conDia ? <span className="num">{hechos}/{items.length}</span> : undefined}>
+      {items.length > 0 && !conDia && <Segmentos hechos={hechos} total={items.length} etiqueta={etiqueta} />}
       <ul className="lista-items">
-        <AnimatePresence initial={false}>
-          {ordenados.map((it, idx) => {
-            const nuevoDia = conDia && (idx === 0 || ordenados[idx - 1].dia !== it.dia)
-            return (
-              <motion.li key={it.id} layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40, height: 0 }}>
-                {nuevoDia && <span className="dia-marca">Día {it.dia || 1}</span>}
-                <div className={`item ${it.hecho ? "hecho" : ""}`}>
-                  <motion.button
-                    className="item-tilde"
-                    whileTap={{ scale: 0.7 }}
-                    aria-label={it.hecho ? "Destildar" : "Tildar"}
-                    onClick={(e) => {
-                      vibrar(8)
-                      editarItem(it.id, { hecho: !it.hecho })
-                      if (!it.hecho && hechos + 1 === items.length && items.length > 1 && !conDia) {
-                        festejar(e.clientX / innerWidth, e.clientY / innerHeight, 0.8)
-                        avisar(`¡${nombre}: todo listo! 🎉`)
-                      }
-                    }}
-                  >
-                    {it.hecho && (
-                      <motion.svg viewBox="0 0 24 24" initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                        <motion.path d="M5 12l5 5 9-11" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} />
-                      </motion.svg>
-                    )}
-                  </motion.button>
-                  <span className="item-texto">{it.texto}</span>
-                  <button className="item-borrar" aria-label="Borrar" onClick={() => borrarItem(it.id)}>
-                    ×
-                  </button>
-                </div>
-              </motion.li>
-            )
-          })}
-        </AnimatePresence>
+        {ordenados.map((it, idx) => {
+          const nuevoDia = conDia && (idx === 0 || ordenados[idx - 1].dia !== it.dia)
+          return (
+            <li key={it.id}>
+              {nuevoDia && <span className="dia-marca num">Día {String(it.dia || 1).padStart(2, "0")}</span>}
+              <div className={`item ${it.hecho ? "hecho" : ""}`}>
+                <button
+                  className="item-tilde"
+                  aria-label={it.hecho ? "Destildar" : "Tildar"}
+                  aria-pressed={it.hecho}
+                  onClick={(e) => {
+                    vibrar(8)
+                    editarItem(it.id, { hecho: !it.hecho })
+                    if (!it.hecho && hechos + 1 === items.length && items.length > 1 && !conDia) {
+                      festejar(e.clientX / innerWidth, e.clientY / innerHeight, 0.6)
+                      avisar(`${nombre}: completo ✦`)
+                    }
+                  }}
+                >
+                  {it.hecho && (
+                    <svg viewBox="0 0 24 24" aria-hidden>
+                      <path d="M5 12l5 5 9-11" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="square" />
+                    </svg>
+                  )}
+                </button>
+                <span className="item-texto">{it.texto}</span>
+                {veredictos && (
+                  <span className="veredicto" role="group" aria-label="¿Lo repetirían?">
+                    <button
+                      className={it.veredicto === "repetir" ? "si" : ""}
+                      aria-pressed={it.veredicto === "repetir"}
+                      onClick={() => editarItem(it.id, { veredicto: it.veredicto === "repetir" ? "" : "repetir", hecho: true })}
+                    >
+                      👍 <span>Repetir</span>
+                    </button>
+                    <button
+                      className={it.veredicto === "pasar" ? "no" : ""}
+                      aria-pressed={it.veredicto === "pasar"}
+                      onClick={() => editarItem(it.id, { veredicto: it.veredicto === "pasar" ? "" : "pasar", hecho: true })}
+                    >
+                      👎 <span>Pasar</span>
+                    </button>
+                  </span>
+                )}
+                <button className="item-borrar" aria-label="Borrar" onClick={() => borrarItem(it.id)}>
+                  ×
+                </button>
+              </div>
+            </li>
+          )
+        })}
       </ul>
       <form className="item-nuevo" onSubmit={agregar}>
         {conDia && (
-          <input className="campo campo-dia" type="number" min={1} value={dia} onChange={(e) => setDia(Math.max(1, Number(e.target.value) || 1))} aria-label="Día" />
+          <input className="campo campo-dia num" type="number" min={1} value={dia} onChange={(e) => setDia(Math.max(1, Number(e.target.value) || 1))} aria-label="Día" />
         )}
         <input className="campo" placeholder={placeholder} value={texto} onChange={(e) => setTexto(e.target.value)} enterKeyHint="done" />
-        <Boton type="submit" className="boton-chico" disabled={!texto.trim()} aria-label="Agregar">
+        <Boton type="submit" className="boton-cuadrado" disabled={!texto.trim()} aria-label="Agregar">
           +
         </Boton>
       </form>
-    </section>
+    </Bloque>
   )
 }
 
@@ -114,26 +126,18 @@ export function Fotos({ plan }: { plan: Plan }) {
   }
 
   return (
-    <section className="seccion bloque">
-      <div className="seccion-cabeza">
-        <h2>Fotos</h2>
-        <Boton variante="fantasma" className="boton-chico" onClick={subir} disabled={subiendo > 0}>
-          {subiendo ? `Subiendo ${subiendo}…` : "+ Sumar fotos"}
+    <Bloque
+      titulo="Fotos"
+      accion={
+        <Boton variante="secundario" className="boton-chico" onClick={subir} disabled={subiendo > 0}>
+          {subiendo ? `Subiendo ${subiendo}…` : "+ Sumar"}
         </Boton>
-      </div>
+      }
+    >
       {plan.fotos.length ? (
         <div className="fotos">
-          {plan.fotos.map((f, i) => (
-            <motion.button
-              key={f}
-              className="foto"
-              style={{ rotate: `${((i * 37) % 9) - 4}deg` }}
-              onClick={() => setAbierta(f)}
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileTap={{ scale: 0.95 }}
-              layoutId={`foto-${f}`}
-            >
+          {plan.fotos.map((f) => (
+            <motion.button key={f} className="foto" onClick={() => setAbierta(f)} layoutId={`foto-${f}`}>
               <img src={urlArchivo(plan, f, "300x300")} alt="" loading="lazy" />
             </motion.button>
           ))}
@@ -143,10 +147,10 @@ export function Fotos({ plan }: { plan: Plan }) {
       )}
       <AnimatePresence>
         {abierta && (
-          <motion.div className="visor" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setAbierta(null)}>
+          <motion.div className="visor-fotos" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setAbierta(null)}>
             <motion.img layoutId={`foto-${abierta}`} src={urlArchivo(plan, abierta)} alt="" />
             <div className="visor-acciones" onClick={(e) => e.stopPropagation()}>
-              <Boton variante="fantasma" className="boton-chico" onClick={() => setPortadaDesdeFoto(plan, abierta)}>
+              <Boton variante="secundario" className="boton-chico" onClick={() => setPortadaDesdeFoto(plan, abierta)}>
                 Usar de portada
               </Boton>
               <Boton variante="peligro" className="boton-chico" onClick={() => borrar(abierta)}>
@@ -156,7 +160,7 @@ export function Fotos({ plan }: { plan: Plan }) {
           </motion.div>
         )}
       </AnimatePresence>
-    </section>
+    </Bloque>
   )
 }
 

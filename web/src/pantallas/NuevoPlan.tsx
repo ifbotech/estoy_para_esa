@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Arte } from "../componentes/Arte"
 import { BarraGanas, Boton, Hoja } from "../componentes/Controles"
@@ -9,7 +8,7 @@ import { crearPlan, useStore, useYo, votar } from "../store"
 import type { Datos } from "../tipos"
 import { festejar } from "../util/efectos"
 import { interpretar } from "../util/interpretar"
-import { limpiarTitulo, separarAnio, traerPreview } from "../util/preview"
+import { limpiarTitulo, promedioLetterboxd, separarAnio, traerPreview } from "../util/preview"
 import { sonar } from "../util/sonidos"
 
 const EJEMPLOS = [
@@ -80,7 +79,14 @@ export function NuevoPlan({ abierta, onCerrar, categoriaInicial }: { abierta: bo
           setTitulo(tt)
           setTituloTocado(true)
         }
-        setDatos((d) => ({ ...d, letterboxd: url, poster: prev.imagen, anio, director: prev.extraEtiqueta?.toLowerCase().includes("direct") ? prev.extra : d.director }))
+        setDatos((d) => ({
+          ...d,
+          letterboxd: url,
+          poster: prev.imagen,
+          anio,
+          director: prev.extraEtiqueta?.toLowerCase().includes("direct") ? prev.extra : d.director,
+          lbPromedio: promedioLetterboxd(prev),
+        }))
       } else if (prev.imagen) setDatos((d) => ({ ...d, imagen: prev.imagen }))
     }, 500)
     return () => clearTimeout(t)
@@ -123,24 +129,22 @@ export function NuevoPlan({ abierta, onCerrar, categoriaInicial }: { abierta: bo
         />
 
         <div className="detecta" aria-live="polite">
-          <AnimatePresence>
-            {cat && (
-              <motion.span key="cat" className="detecta-chip si" style={{ "--cc": cat.color } as React.CSSProperties} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                {cat.emoji} {cat.nombre}
-              </motion.span>
-            )}
-            {cuando && (
-              <motion.button key="cuando" className="detecta-chip si" onClick={() => setSinFecha(true)} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} aria-label="Quitar el día">
-                📅 {cuando.etiqueta} ×
-              </motion.button>
-            )}
-            {p.link && (
-              <motion.span key="link" className="detecta-chip si" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                🔗 {tipoDeLink(p.link) === "letterboxd" ? "Letterboxd" : tipoDeLink(p.link) === "maps" ? "Maps" : tipoDeLink(p.link) === "instagram" ? "Instagram" : "link"}
-                {buscando && " …"}
-              </motion.span>
-            )}
-          </AnimatePresence>
+          {cat && (
+            <span className="detecta-chip si" style={{ "--cc": cat.color } as React.CSSProperties}>
+              {cat.emoji} {cat.nombre}
+            </span>
+          )}
+          {cuando && (
+            <button className="detecta-chip si fecha" onClick={() => setSinFecha(true)} aria-label="Quitar el día">
+              📅 {cuando.etiqueta} ×
+            </button>
+          )}
+          {p.link && (
+            <span className="detecta-chip si">
+              🔗 {tipoDeLink(p.link) === "letterboxd" ? "Letterboxd" : tipoDeLink(p.link) === "maps" ? "Maps" : tipoDeLink(p.link) === "instagram" ? "Instagram" : "link"}
+              {buscando && " …"}
+            </span>
+          )}
           {!cat && texto.length > 2 && <span className="detecta-chip">¿qué categoría? elegila abajo</span>}
         </div>
 
@@ -153,7 +157,7 @@ export function NuevoPlan({ abierta, onCerrar, categoriaInicial }: { abierta: bo
               onClick={() => setCatElegida(c.id)}
               aria-pressed={cat?.id === c.id}
             >
-              <Arte tipo={c.personalidad} tam={7} />
+              <Arte tipo={c.personalidad} tam={5} />
               <span>{c.nombre}</span>
             </button>
           ))}
@@ -173,9 +177,7 @@ export function NuevoPlan({ abierta, onCerrar, categoriaInicial }: { abierta: bo
           </label>
         )}
 
-        {(datos.poster || datos.imagen) && (
-          <motion.img className="nuevo-preview" src={datos.poster || datos.imagen} alt="" initial={{ scale: 0.8, rotate: -8, opacity: 0 }} animate={{ scale: 1, rotate: -3, opacity: 1 }} />
-        )}
+        {(datos.poster || datos.imagen) && <img className="nuevo-preview" src={datos.poster || datos.imagen} alt="" />}
 
         <BarraGanas valor={ganas} nombre="Tus ganas" inicial={yo?.name?.slice(0, 1)} color={colorDe(yo ?? undefined, yoI)} editable onCambio={setGanas} />
 

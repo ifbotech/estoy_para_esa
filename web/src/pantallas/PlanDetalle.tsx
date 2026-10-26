@@ -1,10 +1,9 @@
-import { motion } from "motion/react"
 import { useState } from "react"
-import { promedioGanas } from "../calculos"
+import { aCiegas, promedioGanas, sellado } from "../calculos"
 import { Arte } from "../componentes/Arte"
 import { avisar } from "../componentes/Avisos"
-import { BarraGanas, Boton, Estrellas, Hoja, Pasos, TextoEditable } from "../componentes/Controles"
-import { Contador, Resaltado } from "../componentes/Deco"
+import { Boton, Estrellas, GanasDeLosDos, Hoja, Pasos, TextoEditable } from "../componentes/Controles"
+import { Bloque, Segmentos } from "../componentes/Deco"
 import { cambiarEstado, estoyParaEsa } from "../acciones"
 import { colorDe, imagenDe } from "../componentes/Tarjetas"
 import { PERSONALIDADES } from "../personalidades"
@@ -20,12 +19,10 @@ export function PlanDetalle({ id }: { id: string }) {
   const categorias = useStore((s) => s.categorias)
   if (!plan)
     return (
-      <div className="vacio" style={{ marginTop: 80 }}>
-        <Arte tipo="salida" tam={14} />
-        Este plan no existe (o lo borraron).
-        <div style={{ marginTop: 14 }}>
-          <Boton onClick={() => ir("/planes")}>Ir a los planes</Boton>
-        </div>
+      <div className="vacio">
+        <Arte tipo="salida" tam={10} />
+        <p>Este plan no existe (o lo borraron).</p>
+        <Boton onClick={() => ir("/planes")}>Ir a los planes</Boton>
       </div>
     )
   const cat = categorias.find((c) => c.id === plan.categoria)
@@ -34,11 +31,11 @@ export function PlanDetalle({ id }: { id: string }) {
 
 function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalidad }) {
   const categorias = useStore((s) => s.categorias)
-  const usuarios = useStore((s) => s.usuarios)
   const votos = useStore((s) => s.votos).filter((v) => v.plan === plan.id)
   const yo = useYo()
   const cat = categorias.find((c) => c.id === plan.categoria)
   const prom = promedioGanas(plan.id, votos)
+  const ciego = aCiegas(votos, yo?.id)
   const img = imagenDe(plan, "600x0")
   const [cambiarCat, setCambiarCat] = useState(false)
   const info = PERSONALIDADES[personalidad]
@@ -59,29 +56,24 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
   }
 
   return (
-    <div className="detalle">
-      <header className={`capitulo cabecera ${img ? "con-imagen" : ""}`} style={{ "--cap": cat?.color || "var(--a3)" } as React.CSSProperties}>
-        {img && (
-          <motion.div className="cabecera-img" initial={{ scale: 1.12 }} animate={{ scale: 1 }} transition={{ duration: 1 }}>
-            <img src={img} alt="" />
-          </motion.div>
-        )}
-        {!img && (
-          <motion.span className="cabecera-arte" initial={{ y: 40, rotate: 12, opacity: 0 }} animate={{ y: 0, rotate: 4, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.15 }}>
-            <Arte tipo={personalidad} tam={22} mira={-1} />
-          </motion.span>
-        )}
-        {personalidad === "viaje" && <span className="sello-pasaporte">{plan.datos?.pais || "Pasaporte"} ✈</span>}
-        <div className="cabecera-acciones">
-          <button className="boton boton-chico" onClick={() => setCambiarCat(true)}>
-            {cat?.emoji} {cat?.nombre} ▾
+    <div className="detalle" style={{ "--cc": cat?.color || "var(--amarillo)" } as React.CSSProperties}>
+      <header className="ficha-cabeza">
+        <div className="ficha-banda">
+          <button className="banda-cat" onClick={() => setCambiarCat(true)}>
+            {cat?.emoji} {cat?.nombre} <span aria-hidden>▾</span>
           </button>
-          <button className="boton boton-chico" onClick={cambiarPortada} aria-label="Cambiar portada">
-            📷
-          </button>
-          <button className="boton boton-chico" onClick={borrar} aria-label="Borrar plan">
-            🗑
-          </button>
+          <span className="banda-acciones">
+            <button onClick={cambiarPortada} aria-label="Cambiar portada">
+              📷
+            </button>
+            <button onClick={borrar} aria-label="Borrar plan">
+              🗑
+            </button>
+          </span>
+        </div>
+        <div className={`ficha-imagen ${img ? "" : "sin"}`}>
+          {img ? <img src={img} alt="" /> : <Arte tipo={personalidad} tam={12} />}
+          {personalidad === "viaje" && plan.datos?.pais && <span className="sello-pasaporte">{plan.datos.pais} ✈</span>}
         </div>
         <TextoEditable ajustable className="campo-titulo" valor={plan.titulo} onGuardar={(v) => v && editarPlan(plan.id, { titulo: v })} />
       </header>
@@ -92,49 +84,33 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
 
       {plan.estado === "agendado" && (
         <label className="campo-etiqueta cuando">
-          <span>¿Cuándo? (opcional)</span>
+          <span>¿Cuándo?</span>
           <input
-            className="campo"
+            className="campo num"
             type="datetime-local"
-            value={plan.cuando ? plan.cuando.replace(" ", "T").slice(0, 16) : ""}
+            value={plan.cuando ? aLocal(plan.cuando) : ""}
             onChange={(e) => editarPlan(plan.id, { cuando: e.target.value ? new Date(e.target.value).toISOString() : "" })}
           />
         </label>
       )}
 
-      <section className="seccion bloque ganas-bloque">
-        <div className="seccion-cabeza ganas-resumen">
-          <h2>
-            Ganas que <Resaltado>tenemos</Resaltado>
-          </h2>
-          <span className="ganas-promedio">{prom === null ? "—" : <Contador valor={Math.round(prom)} />}</span>
-        </div>
-        <div className="ganas-lista">
-          {usuarios.map((u, i) => {
-            const v = votos.find((x) => x.usuario === u.id)
-            const mio = u.id === yo?.id
-            return (
-              <BarraGanas
-                key={u.id}
-                nombre={mio ? `${u.name} (vos)` : u.name}
-                inicial={u.name.slice(0, 1)}
-                color={colorDe(u, i)}
-                valor={v?.ganas ?? 50}
-                pendiente={!v && !mio}
-                editable={mio}
-                onCambio={(g) => votar(plan.id, { ganas: g })}
-              />
-            )
-          })}
-        </div>
+      <Bloque
+        titulo="Ganas"
+        className="ganas-bloque"
+        accion={<span className="ganas-promedio num">{ciego || prom === null ? "¿?" : `${Math.round(prom)}%`}</span>}
+      >
+        <GanasDeLosDos planId={plan.id} />
         {plan.estado !== "hecho" && (
           <Boton className="boton-grande" onClick={(e) => estoyParaEsa(plan.id, e)}>
             🙌 ¡Estoy para esa!
           </Boton>
         )}
-        <p className="etiqueta suave">el promedio de los dos decide su lugar en la lista</p>
-      </section>
+        <p className="nota-pie">
+          {ciego ? "Votás a ciegas: el número del otro se destapa cuando votes." : "El promedio de los dos decide su lugar en la lista."}
+        </p>
+      </Bloque>
 
+      {plan.estado === "hecho" && <SelloRecuerdo plan={plan} />}
       {plan.estado === "hecho" && <Puntajes plan={plan} />}
 
       {personalidad === "cine" && <SeccionCine plan={plan} />}
@@ -143,15 +119,18 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
       {personalidad === "taller" && <SeccionTaller plan={plan} />}
 
       {info.listas.map((l) => (
-        <ListaItems key={l.id} plan={plan} lista={l.id} nombre={l.nombre} placeholder={l.placeholder} />
+        <ListaItems
+          key={l.id}
+          plan={plan}
+          lista={l.id}
+          nombre={l.id === "pedir" && plan.estado === "hecho" ? "Qué probamos" : l.nombre}
+          placeholder={l.placeholder}
+        />
       ))}
 
-      <section className="seccion bloque">
-        <div className="seccion-cabeza">
-          <h2>Notas</h2>
-        </div>
+      <Bloque titulo="Notas">
         <TextoEditable multilinea valor={plan.notas} placeholder="Lo que haya que acordarse…" onGuardar={(v) => editarPlan(plan.id, { notas: v })} />
-        <label className="campo-etiqueta" style={{ marginTop: 12 }}>
+        <label className="campo-etiqueta">
           <span>Link</span>
           <TextoEditable valor={plan.link} placeholder="https://…" onGuardar={(v) => editarPlan(plan.id, { link: v })} />
         </label>
@@ -160,36 +139,65 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
             Abrir link ↗
           </a>
         )}
-      </section>
+      </Bloque>
 
       <Fotos plan={plan} />
 
-      <p className="detalle-pie suave">
+      <p className="detalle-pie num">
         Sumado el {new Date(plan.created.replace(" ", "T")).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
         {plan.hecho_en && ` · hecho el ${new Date(plan.hecho_en.replace(" ", "T")).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}`}
       </p>
 
       <Hoja abierta={cambiarCat} onCerrar={() => setCambiarCat(false)} titulo="Cambiar categoría">
-        <div className="grid2">
+        <div className="grilla-cats">
           {categorias.map((c) => (
             <button
               key={c.id}
-              className="marco mosaico mosaico-chico"
-              style={{ "--cap": c.color } as React.CSSProperties}
+              className={`cat-boton ${c.id === plan.categoria ? "elegida" : ""}`}
+              style={{ "--cc": c.color } as React.CSSProperties}
               onClick={() => {
                 editarPlan(plan.id, { categoria: c.id })
                 setCambiarCat(false)
               }}
             >
-              <span className="marco-dentro mosaico-dentro">
-                <Arte tipo={c.personalidad} tam={8} />
-                <span className="mosaico-nombre">{c.nombre}</span>
-              </span>
+              <Arte tipo={c.personalidad} tam={6} />
+              <span>{c.nombre}</span>
             </button>
           ))}
         </div>
       </Hoja>
     </div>
+  )
+}
+
+/** «2026-10-26 21:00:00.000Z» → valor de un input datetime-local en la hora de acá. */
+function aLocal(iso: string) {
+  const d = new Date(iso.replace(" ", "T"))
+  if (isNaN(d.getTime())) return ""
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+/** El sello del recuerdo: qué falta para que quede 100 % cerrado. */
+function SelloRecuerdo({ plan }: { plan: Plan }) {
+  const votos = useStore((s) => s.votos)
+  const usuarios = useStore((s) => s.usuarios)
+  const s = sellado(plan, votos, usuarios)
+  return (
+    <Bloque titulo={s.completo ? "Recuerdo sellado" : "Sellar el recuerdo"} className={`sello-bloque ${s.completo ? "completo" : ""}`} accion={<span className="num">{s.hechos}/{s.total}</span>}>
+      <Segmentos hechos={s.hechos} total={s.total} />
+      <ul className="checklist">
+        {s.pasos.map((p) => (
+          <li key={p.id} className={p.ok ? "ok" : ""}>
+            <span className="check" aria-hidden>
+              {p.ok ? "✓" : ""}
+            </span>
+            {p.etiqueta}
+          </li>
+        ))}
+      </ul>
+      {s.completo && <p className="nota-pie">✦ 100 % sellado. Queda así en Recuerdos y en el Wrapped.</p>}
+    </Bloque>
   )
 }
 
@@ -200,21 +208,17 @@ function Puntajes({ plan }: { plan: Plan }) {
   const mio = votos.find((v) => v.usuario === yo?.id)
   const [resena, setResena] = useState<string | null>(null)
   return (
-    <motion.section className="seccion bloque puntajes" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="seccion-cabeza">
-        <h2>
-          ¿Qué tal <span className="serif">estuvo</span>?
-        </h2>
-      </div>
+    <Bloque titulo="¿Qué tal estuvo?" className="puntajes">
       {usuarios.map((u, i) => {
         const v = votos.find((x) => x.usuario === u.id)
         const esYo = u.id === yo?.id
         return (
           <div key={u.id} className="puntaje-fila">
-            <span className="puntaje-nombre" style={{ color: colorDe(u, i) }}>
+            <span className="puntaje-nombre">
+              <i style={{ background: colorDe(u, i) }} aria-hidden />
               {u.name}
             </span>
-            <Estrellas valor={v?.puntaje ?? 0} onCambio={esYo ? (p) => votar(plan.id, { puntaje: p }) : undefined} />
+            <Estrellas valor={v?.puntaje ?? 0} tam={26} onCambio={esYo ? (p) => votar(plan.id, { puntaje: p }) : undefined} />
             {!esYo && v?.resena && <p className="resena">“{v.resena}”</p>}
           </div>
         )
@@ -229,6 +233,6 @@ function Puntajes({ plan }: { plan: Plan }) {
           setResena(null)
         }}
       />
-    </motion.section>
+    </Bloque>
   )
 }
