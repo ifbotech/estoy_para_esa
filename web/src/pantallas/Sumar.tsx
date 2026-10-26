@@ -2,6 +2,7 @@ import { aCiegas, fecha } from "../calculos"
 import { Arte } from "../componentes/Arte"
 import { useStore, useYo } from "../store"
 import type { Personalidad } from "../tipos"
+import type { ModoNuevo } from "./NuevoPlan"
 import { vibrar } from "../util/efectos"
 import { nombreWrap, useWrap } from "../wrap"
 
@@ -12,7 +13,7 @@ const QUE: Record<Personalidad, string> = {
   cafe: "un café",
   viaje: "un viaje",
   taller: "un proyecto",
-  salida: "una salida",
+  salida: "un plancito",
 }
 
 /**
@@ -20,7 +21,7 @@ const QUE: Record<Personalidad, string> = {
  * contás como te salga) y se abre la hoja de nuevo plan con eso elegido.
  * Lo que ya está anotado se ve y se vota en Planes.
  */
-export function Sumar({ onNuevo }: { onNuevo: (categoria?: string) => void }) {
+export function Sumar({ onNuevo }: { onNuevo: (categoria?: string, modo?: ModoNuevo) => void }) {
   const categorias = useStore((s) => s.categorias)
   const planes = useStore((s) => s.planes)
   const votos = useStore((s) => s.votos)
@@ -30,9 +31,9 @@ export function Sumar({ onNuevo }: { onNuevo: (categoria?: string) => void }) {
   const porVotar = pendientes.filter((p) => !votos.some((v) => v.plan === p.id && v.usuario === yo?.id))
   const tapados = porVotar.filter((p) => aCiegas(votos.filter((v) => v.plan === p.id), yo?.id)).length
 
-  const abrir = (categoria?: string) => {
+  const abrir = (categoria?: string, modo?: ModoNuevo) => {
     vibrar(15)
-    onNuevo(categoria)
+    onNuevo(categoria, modo)
   }
 
   return (
@@ -58,11 +59,22 @@ export function Sumar({ onNuevo }: { onNuevo: (categoria?: string) => void }) {
 
       <button className="sumar-charla" onClick={() => abrir()}>
         <span className="sumar-charla-campo">Contalo como te salga…</span>
-        <span className="sumar-charla-ej etiqueta">ej: escapada a Colonia el 5 de diciembre</span>
+        <span className="sumar-charla-ej etiqueta">qué, cuándo, un link: la app entiende el resto</span>
         <span className="sumar-charla-mas" aria-hidden>
           +
         </span>
       </button>
+
+      {pendientes.length > 0 && (
+        <button className="sumar-idea" onClick={() => abrir(undefined, "sumar")}>
+          <span aria-hidden>💡</span>
+          <span>
+            <b>Sumarle algo a un plan</b>
+            <small>una idea más para un viaje o un plan de todo el día</small>
+          </span>
+          <span aria-hidden>→</span>
+        </button>
+      )}
 
       <p className="etiqueta sumar-o">o elegí qué es</p>
 

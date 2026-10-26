@@ -143,6 +143,9 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
       {personalidad === "viaje" && <SeccionViaje plan={plan} />}
       {personalidad === "taller" && <SeccionTaller plan={plan} />}
 
+      {/* las ideas que se van sumando: un día en San Telmo, todo lo de un viaje… */}
+      <ListaItems plan={plan} lista="ideas" nombre="Ideas" placeholder="Lo que se les ocurra sumarle…" />
+
       {info.listas.map((l) => (
         <ListaItems
           key={l.id}

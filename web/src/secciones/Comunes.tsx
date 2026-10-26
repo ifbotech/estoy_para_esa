@@ -10,7 +10,7 @@ import { festejar, vibrar } from "../util/efectos"
 import { achicar, elegirArchivos } from "../util/imagen"
 
 /**
- * Una lista con tildes: pasos, materiales, valija, itinerario, qué pedir.
+ * Una lista con tildes: ideas, pasos, materiales, valija, itinerario, qué pedir.
  * El itinerario se agrupa por día y se lee bien sin señal. En «Qué pedir»,
  * una vez hecho el plan, cada plato se marca para repetir o para pasar.
  */

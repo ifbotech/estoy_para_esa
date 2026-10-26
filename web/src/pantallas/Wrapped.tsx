@@ -461,7 +461,9 @@ function armarDiapos(r: Resumen, usuarios: Usuario[], historico: string[], n: Nu
               lugares conquistados
             </motion.h1>
             <motion.p className="w-texto" {...aparece(1.1)}>
-              {r.lugares.cafes} cafecitos · {r.lugares.comidas} comidas
+              {[r.lugares.comidas && `${r.lugares.comidas} ${r.lugares.comidas === 1 ? "comida" : "comidas"}`, r.lugares.cafes && `${r.lugares.cafes} ${r.lugares.cafes === 1 ? "cafecito" : "cafecitos"}`]
+                .filter(Boolean)
+                .join(" · ")}
             </motion.p>
             {r.lugares.barrios.length > 0 && (
               <>
