@@ -17,7 +17,6 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/pocketbase/pocketbase"
-	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/jsvm"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
@@ -62,10 +61,10 @@ func main() {
 	app.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
 		Func: func(e *core.ServeEvent) error {
 			if !e.Router.HasRoute(http.MethodGet, "/{path...}") {
-				static := apis.Static(os.DirFS(publicDir), true)
+				fsys := os.DirFS(publicDir)
 				e.Router.GET("/{path...}", func(re *core.RequestEvent) error {
 					cabecerasEstaticas(re.Response.Header(), re.Request.URL.Path)
-					return static(re)
+					return servirApp(re, fsys)
 				})
 			}
 			return e.Next()
