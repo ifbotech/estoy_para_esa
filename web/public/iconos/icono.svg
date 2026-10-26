@@ -1,17 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#F5F2E8"/>
+  <rect width="512" height="512" rx="112" fill="#3F8F3A"/>
+  <defs><radialGradient id="b"><stop offset="0" stop-color="#F2CE2E" stop-opacity=".9"/><stop offset="1" stop-color="#F2CE2E" stop-opacity="0"/></radialGradient></defs><circle cx="256" cy="240" r="230" fill="url(#b)"/>
   <g transform="translate(256 256) scale(0.92) translate(-256 -256)" stroke="#121211" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
-    <!-- hilos: salen de cada nudo, se cruzan y bajan juntos -->
-    <path d="M300 324 C 298 356, 266 370, 252 392" fill="none"/>
-    <path d="M206 334 C 210 362, 238 374, 252 392" fill="none"/>
-    <path d="M252 392 C 256 420, 220 438, 208 418 C 196 396, 232 386, 244 410 C 254 432, 254 452, 246 476" fill="none"/>
-    <!-- mostaza, atrás -->
-    <ellipse cx="300" cy="196" rx="94" ry="112" fill="#E0A82E"/>
-    <path d="M286 306 L314 306 L322 324 L278 324 Z" fill="#E0A82E"/>
-    <!-- oliva, adelante -->
-    <ellipse cx="206" cy="206" rx="94" ry="112" fill="#7D8C3C"/>
-    <path d="M192 316 L220 316 L228 334 L184 334 Z" fill="#7D8C3C"/>
-    <path d="M156 160 C 162 138, 176 124, 194 118" fill="none" stroke="#F5F2E8" stroke-width="12"/>
-    <path d="M262 146 C 268 128, 280 116, 296 110" fill="none" stroke="#F5F2E8" stroke-width="12" opacity=".9"/>
+    <!-- hilos: salen de cada nudo, se cruzan y hacen un rulito -->
+    <path d="M304 298 C 302 340, 272 368, 254 392" fill="none"/>
+    <path d="M204 356 C 210 376, 240 382, 254 392" fill="none"/>
+    <path d="M254 392 C 258 420, 222 438, 210 418 C 198 396, 234 386, 246 410 C 256 432, 256 452, 248 476" fill="none"/>
+    <!-- amarillo: atrás y más arriba, apenas inclinado -->
+    <g transform="rotate(8 304 298)">
+      <ellipse cx="304" cy="168" rx="94" ry="112" fill="#F2CE2E"/>
+      <path d="M290 278 L318 278 L326 298 L282 298 Z" fill="#F2CE2E"/>
+      <path d="M266 118 C 272 100, 284 88, 300 82" fill="none" stroke="#F5F2E8" stroke-width="12" opacity=".9"/>
+    </g>
+    <!-- verde: adelante y más abajo -->
+    <g transform="rotate(-6 204 356)">
+      <ellipse cx="204" cy="226" rx="94" ry="112" fill="#1F5A2A"/>
+      <path d="M190 336 L218 336 L226 356 L182 356 Z" fill="#1F5A2A"/>
+      <path d="M154 180 C 160 158, 174 144, 192 138" fill="none" stroke="#F5F2E8" stroke-width="12"/>
+    </g>
   </g>
 </svg>
