@@ -113,7 +113,7 @@ export function Planes({ ruta }: { ruta: Ruta }) {
               conEstado={Boolean(busqueda.trim()) || estado === "todos"}
               puesto={estado !== "hecho" && estado !== "agendado" && !busqueda && r.promedio !== null ? i + 1 : undefined}
             />
-            {r.plan.estado !== "hecho" && !yaVote(r.plan.id) && <VotoRapido planId={r.plan.id} />}
+            {r.plan.estado !== "hecho" && <VotoRapido planId={r.plan.id} />}
           </div>
         ))}
       </div>
