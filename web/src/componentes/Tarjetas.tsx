@@ -1,5 +1,5 @@
 import { animate, motion, useMotionValue, useTransform } from "motion/react"
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { abrirVistaRapida, estoyParaEsa, moverEstado } from "../acciones"
 import { UMBRAL_MATCH_TOTAL, aCiegas, type Rankeado } from "../calculos"
 import { urlArchivo } from "../pb"
@@ -230,14 +230,24 @@ const RAPIDOS = [
   { ganas: 100, cara: "🔥", nombre: "¡Para esa!" },
 ]
 
+/** La opción de un toque más cerca de unas ganas (para marcar la elegida). */
+function rapidoDe(ganas: number) {
+  return RAPIDOS.reduce((a, o) => (Math.abs(o.ganas - ganas) < Math.abs(a.ganas - ganas) ? o : a))
+}
+
 /**
- * El voto de un toque, pegado abajo de la fila de un plan que todavía no
- * votaste. Sigue siendo a ciegas: el del otro se destapa recién al tocar.
- * Para afinar el número está la barra del detalle.
+ * El voto de un toque, pegado abajo de la fila de un plan. Si todavía no
+ * votaste, muestra las opciones (sigue siendo a ciegas: el del otro se
+ * destapa recién al tocar). Si ya votaste, muestra tus ganas y se puede
+ * cambiar con un toque. Para afinar el número está la barra del detalle.
  */
 export function VotoRapido({ planId }: { planId: string }) {
   const yo = useYo()
+  const mio = useStore((s) => s.votos).find((v) => v.plan === planId && v.usuario === yo?.id)
+  const [cambiando, setCambiando] = useState(false)
   const elegir = (ganas: number, e: React.MouseEvent) => {
+    setCambiando(false)
+    if (mio && mio.ganas === ganas) return
     const otro = getEstado().votos.find((v) => v.plan === planId && v.usuario !== yo?.id)
     if (ganas === 100) void estoyParaEsa(planId, e)
     else {
@@ -250,11 +260,32 @@ export function VotoRapido({ planId }: { planId: string }) {
       avisar("¡MATCH TOTAL! 🔥 Los dos están para esa.")
     }
   }
+  if (mio && !cambiando) {
+    const actual = rapidoDe(mio.ganas)
+    return (
+      <div className="voto-rapido votado">
+        <span className="voto-rapido-pregunta etiqueta">tus ganas</span>
+        <span className="voto-rapido-mio">
+          <span aria-hidden>{actual.cara}</span> <b className="num">{Math.round(mio.ganas)}%</b>
+        </span>
+        <button className="voto-rapido-cambiar" onClick={() => setCambiando(true)}>
+          cambiar
+        </button>
+      </div>
+    )
+  }
+  const marcada = mio ? rapidoDe(mio.ganas).ganas : null
   return (
     <div className="voto-rapido" role="group" aria-label="¿Cuántas ganas tenés?">
       <span className="voto-rapido-pregunta etiqueta">¿ganas?</span>
       {RAPIDOS.map((o) => (
-        <button key={o.ganas} className="voto-rapido-op" onClick={(e) => elegir(o.ganas, e)} aria-label={`${o.nombre}: ${o.ganas}%`}>
+        <button
+          key={o.ganas}
+          className="voto-rapido-op"
+          aria-pressed={marcada === o.ganas}
+          onClick={(e) => elegir(o.ganas, e)}
+          aria-label={`${o.nombre}: ${o.ganas}%`}
+        >
           <span aria-hidden>{o.cara}</span>
           <small>{o.nombre}</small>
         </button>

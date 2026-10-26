@@ -187,7 +187,13 @@
   transition: background-color var(--rapido);
 }
 .voto-rapido-op small { font-family: var(--f-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
-.voto-rapido-op:active, .voto-rapido-op:focus-visible { background: var(--tinta); color: var(--amarillo); }
+.voto-rapido-op:active, .voto-rapido-op:focus-visible, .voto-rapido-op[aria-pressed="true"] { background: var(--tinta); color: var(--amarillo); }
+/* ya votado: tus ganas y el botón para cambiarlas */
+.voto-rapido.votado { grid-template-columns: auto 1fr auto; background: var(--superficie); }
+.voto-rapido-mio { display: flex; align-items: center; gap: 6px; padding: 0 10px; border-left: var(--borde); font-size: 16px; }
+.voto-rapido-mio b { font-size: 15px; }
+.voto-rapido-cambiar { min-height: var(--toque); padding: 0 14px; border-left: var(--borde); background: var(--amarillo); font-family: var(--f-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; transition: background-color var(--rapido); }
+.voto-rapido-cambiar:active, .voto-rapido-cambiar:focus-visible { background: var(--tinta); color: var(--amarillo); }
 .pista-gestos { margin: 10px 0 12px; color: var(--suave); font-size: 9.5px; line-height: 1.5; }
 .datos-grilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); border: var(--borde); border-radius: 4px; overflow: hidden; }
 .datos-grilla > div { display: grid; gap: 2px; padding: 8px 10px; border-right: var(--borde); border-bottom: var(--borde); margin: 0 -2px -2px 0; }
