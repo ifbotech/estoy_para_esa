@@ -75,6 +75,11 @@
 .sumar-wrap-texto .etiqueta { color: var(--papel); }
 .sumar-wrap-texto b { font-family: var(--f-display); font-weight: 800; font-size: 28px; line-height: 0.95; text-transform: uppercase; font-stretch: 80%; font-variation-settings: "wdth" 80; }
 .sumar-wrap-play { flex: none; width: 64px; display: grid; place-items: center; border-left: 2px solid var(--amarillo); font-size: 26px; }
+.sumar-idea { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; margin-top: 14px; padding: 8px 14px 8px 10px; border: var(--borde); border-radius: var(--radio); background: var(--superficie); box-shadow: var(--sombra-chica); text-align: left; }
+.sumar-idea > span:first-child { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border: var(--borde); border-radius: 4px; background: var(--amarillo); font-size: 20px; }
+.sumar-idea > span:nth-child(2) { flex: 1; display: grid; gap: 2px; }
+.sumar-idea b { font-weight: 700; font-size: 15.5px; }
+.sumar-idea small { font-size: 12.5px; color: var(--suave); }
 .sumar-o { margin: var(--gap-bloques) 0 10px; }
 .sumar-cats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .sumar-cat {
@@ -328,6 +333,18 @@
 .cat-boton.elegida { background: var(--cc); }
 
 /* --- nuevo plan ----------------------------------------------------------- */
+.nuevo-modo { display: grid; grid-template-columns: 1fr 1fr; border: var(--borde); border-radius: var(--radio); background: var(--superficie); box-shadow: var(--sombra-chica); overflow: hidden; }
+.nuevo-modo button { min-height: var(--toque); padding: 6px 8px; font-weight: 700; font-size: 14px; }
+.nuevo-modo button + button { border-left: var(--borde); }
+.nuevo-modo button.activo { background: var(--tinta); color: var(--papel); }
+.elegir-plan { display: grid; gap: 8px; }
+.elegir-plan-lista { display: grid; gap: 8px; max-height: 46vh; overflow-y: auto; padding: 2px 4px 4px 2px; }
+.elegir-plan-op { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; width: 100%; min-height: 56px; padding: 8px 12px; border: var(--borde); border-left: 10px solid var(--cc); border-radius: var(--radio); background: var(--superficie); box-shadow: var(--sombra-chica); text-align: left; }
+.elegir-plan-op .chip-cat { justify-self: start; }
+.elegir-plan-op b { grid-column: 1; font-size: 15.5px; line-height: 1.2; }
+.elegir-plan-op small { grid-column: 2; grid-row: 1 / span 2; font-size: 11px; font-weight: 700; color: var(--suave); }
+.elegir-plan-op.elegido { background: var(--amarillo); }
+.elegir-plan-op.elegido small { color: var(--tinta); }
 .nuevo { display: grid; gap: 14px; }
 .charla { font-size: 20px; font-weight: 600; line-height: 1.3; min-height: 88px; resize: none; box-shadow: var(--sombra-chica); }
 .detecta { display: flex; flex-wrap: wrap; gap: 6px; min-height: 32px; }

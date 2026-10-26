@@ -88,5 +88,8 @@ se carga con `require(`${__hooks}/util.js`)` adentro de cada handler.
   de un toque (`VotoRapido`, sigue siendo a ciegas); ahí vive la máquina
   Sorpréndanme (`componentes/Maquina.tsx`).
 - `web/src/secciones/`: lo especial de cada personalidad (cine, lugar, viaje, taller).
+  Todos los planes tienen la lista «Ideas» (se suma desde el plan o desde
+  NuevoPlan en modo «Sumar a un plan»). Categorías: Cine en casa,
+  Gastronomía, Viajes, DIY y Plancitos.
 - `web/src/componentes/Arte.tsx` + `estilos/arte.css`: los dibujos con CSS.
 - `server/`: PocketBase + `$epe.webpush` para los hooks + comando `usuario`.

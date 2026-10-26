@@ -4,7 +4,7 @@ import { Avisos, avisar } from "./componentes/Avisos"
 import { BarraNav } from "./componentes/BarraNav"
 import { EnVivo } from "./componentes/Deco"
 import { Globos } from "./componentes/Globos"
-import { NuevoPlan } from "./pantallas/NuevoPlan"
+import { NuevoPlan, type ModoNuevo } from "./pantallas/NuevoPlan"
 import { VistaRapida } from "./componentes/VistaRapida"
 import { Login } from "./pantallas/Login"
 import { Mas } from "./pantallas/Mas"
@@ -24,8 +24,8 @@ export function App() {
   const listo = useStore((s) => s.listo)
   const ruta = useRuta()
   // la hoja de nuevo plan: cerrada (null) o abierta, con la categoría elegida si la hay
-  const [nuevo, setNuevo] = useState<{ cat?: string } | null>(null)
-  const abrirNuevo = (cat?: string) => setNuevo({ cat })
+  const [nuevo, setNuevo] = useState<{ cat?: string; modo?: ModoNuevo } | null>(null)
+  const abrirNuevo = (cat?: string, modo?: ModoNuevo) => setNuevo({ cat, modo })
 
   useEffect(() => {
     if (!logueado) return
@@ -118,7 +118,12 @@ export function App() {
       </AnimatePresence>
       {/* en el detalle de un plan, abajo va su barra de acción (ver PlanDetalle) */}
       {!pantallaCompleta && seccion !== "plan" && <BarraNav actual={tab} />}
-      <NuevoPlan abierta={nuevo !== null} onCerrar={() => setNuevo(null)} categoriaInicial={nuevo?.cat ?? ruta.query.get("cat") ?? undefined} />
+      <NuevoPlan
+        abierta={nuevo !== null}
+        onCerrar={() => setNuevo(null)}
+        categoriaInicial={nuevo?.cat ?? ruta.query.get("cat") ?? undefined}
+        modoInicial={nuevo?.modo}
+      />
       <VistaRapida />
       <Avisos />
     </>

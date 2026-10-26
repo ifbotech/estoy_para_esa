@@ -1,6 +1,6 @@
 export type Estado = "idea" | "agendado" | "en_curso" | "hecho"
 export type Personalidad = "cine" | "cocina" | "cafe" | "viaje" | "taller" | "salida"
-export type Lista = "pasos" | "materiales" | "valija" | "itinerario" | "pedir"
+export type Lista = "pasos" | "materiales" | "valija" | "itinerario" | "pedir" | "ideas"
 
 interface Base {
   id: string

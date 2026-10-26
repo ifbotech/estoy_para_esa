@@ -42,7 +42,7 @@ export const PERSONALIDADES: Record<
     verbo: "hacerlo",
   },
   salida: {
-    nombre: "Salida",
+    nombre: "Plancito",
     descripcion: "El lugar, el barrio y el mapa.",
     listas: [],
     verbo: "salir",
@@ -55,6 +55,7 @@ export const LISTA_NOMBRES: Record<Lista, string> = {
   valija: "Valija",
   itinerario: "Itinerario",
   pedir: "Qué pedir",
+  ideas: "Ideas",
 }
 
 /** Reconoce links pegados para completar solo la categoría y los datos. */
