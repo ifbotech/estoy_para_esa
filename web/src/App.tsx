@@ -105,7 +105,8 @@ export function App() {
           {pantalla}
         </motion.main>
       </AnimatePresence>
-      {!pantallaCompleta && <BarraNav actual={tab} onNuevo={() => setNuevo(true)} />}
+      {/* en el detalle de un plan, abajo va su barra de acción (ver PlanDetalle) */}
+      {!pantallaCompleta && seccion !== "plan" && <BarraNav actual={tab} onNuevo={() => setNuevo(true)} />}
       <NuevoPlan abierta={nuevo} onCerrar={() => setNuevo(false)} categoriaInicial={ruta.query.get("cat") ?? undefined} />
       <VistaRapida />
       <Avisos />

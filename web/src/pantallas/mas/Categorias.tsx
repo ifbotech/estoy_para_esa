@@ -73,7 +73,16 @@ export function Categorias() {
         + Nueva categoría
       </Boton>
 
-      <Hoja abierta={Boolean(editando)} onCerrar={() => setEditando(null)} titulo={editando?.id ? "Editar categoría" : "Nueva categoría"}>
+      <Hoja
+        abierta={Boolean(editando)}
+        onCerrar={() => setEditando(null)}
+        titulo={editando?.id ? "Editar categoría" : "Nueva categoría"}
+        pie={
+          <Boton className="boton-grande" onClick={guardar} disabled={!editando?.nombre?.trim()}>
+            Guardar
+          </Boton>
+        }
+      >
         {editando && (
           <div className="nuevo-form">
             <div className="grid2" style={{ gridTemplateColumns: "90px 1fr" }}>
@@ -105,9 +114,6 @@ export function Categorias() {
                 </button>
               ))}
             </div>
-            <Boton className="boton-grande" onClick={guardar} disabled={!editando.nombre?.trim()}>
-              Guardar
-            </Boton>
             {editando.id && (
               <Boton
                 variante="peligro"

@@ -116,7 +116,16 @@ export function NuevoPlan({ abierta, onCerrar, categoriaInicial }: { abierta: bo
   const yoI = Math.max(0, usuarios.findIndex((u) => u.id === yo?.id))
 
   return (
-    <Hoja abierta={abierta} onCerrar={onCerrar} titulo="Contame el plan">
+    <Hoja
+      abierta={abierta}
+      onCerrar={onCerrar}
+      titulo="Contame el plan"
+      pie={
+        <Boton className="boton-grande" onClick={guardar} disabled={!tituloFinal || !cat || guardando}>
+          {guardando ? "Guardando…" : cuando ? `¡Agendar para ${cuando.etiqueta}!` : "¡Agregar!"}
+        </Boton>
+      }
+    >
       <div className="nuevo">
         <textarea
           className="campo charla"
@@ -181,9 +190,6 @@ export function NuevoPlan({ abierta, onCerrar, categoriaInicial }: { abierta: bo
 
         <BarraGanas valor={ganas} nombre="Tus ganas" inicial={yo?.name?.slice(0, 1)} color={colorDe(yo ?? undefined, yoI)} editable onCambio={setGanas} />
 
-        <Boton className="boton-grande" onClick={guardar} disabled={!tituloFinal || !cat || guardando}>
-          {guardando ? "Guardando…" : cuando ? `¡Agendar para ${cuando.etiqueta}!` : "¡Agregar!"}
-        </Boton>
       </div>
     </Hoja>
   )

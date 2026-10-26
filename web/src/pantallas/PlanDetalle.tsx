@@ -1,5 +1,6 @@
-import { useState } from "react"
-import { aCiegas, promedioGanas, sellado } from "../calculos"
+import { AnimatePresence, motion } from "motion/react"
+import { useEffect, useRef, useState } from "react"
+import { accionPrincipal, aCiegas, promedioGanas, sellado } from "../calculos"
 import { Arte } from "../componentes/Arte"
 import { avisar } from "../componentes/Avisos"
 import { Boton, Estrellas, GanasDeLosDos, Hoja, Pasos, TextoEditable } from "../componentes/Controles"
@@ -8,10 +9,11 @@ import { cambiarEstado, estoyParaEsa } from "../acciones"
 import { colorDe, imagenDe } from "../componentes/Tarjetas"
 import { PERSONALIDADES } from "../personalidades"
 import { ir, volver } from "../router"
-import { ListaItems, Fotos } from "../secciones/Comunes"
+import { ListaItems, Fotos, subirFotos } from "../secciones/Comunes"
 import { SeccionCine, SeccionLugar, SeccionTaller, SeccionViaje } from "../secciones/Especiales"
-import { borrarPlan, editarPlan, useStore, useYo, votar } from "../store"
-import type { Personalidad, Plan } from "../tipos"
+import { borrarPlan, editarItem, editarPlan, useStore, useYo, votar } from "../store"
+import { ESTADOS, type Personalidad, type Plan } from "../tipos"
+import { vibrar } from "../util/efectos"
 import { achicar, elegirArchivos } from "../util/imagen"
 
 export function PlanDetalle({ id }: { id: string }) {
@@ -39,6 +41,17 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
   const img = imagenDe(plan, "600x0")
   const [cambiarCat, setCambiarCat] = useState(false)
   const info = PERSONALIDADES[personalidad]
+  const cabecera = useRef<HTMLElement>(null)
+  const [tituloFijo, setTituloFijo] = useState(false)
+
+  // Cuando la ficha sale de la pantalla, el título queda fijo arriba.
+  useEffect(() => {
+    const el = cabecera.current
+    if (!el || !("IntersectionObserver" in window)) return
+    const o = new IntersectionObserver(([e]) => setTituloFijo(!e.isIntersecting), { rootMargin: "-100px 0px 0px 0px" })
+    o.observe(el)
+    return () => o.disconnect()
+  }, [])
 
   const cambiarPortada = async () => {
     const [a] = await elegirArchivos(false)
@@ -57,7 +70,18 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
 
   return (
     <div className="detalle" style={{ "--cc": cat?.color || "var(--amarillo)" } as React.CSSProperties}>
-      <header className="ficha-cabeza">
+      <AnimatePresence>
+        {tituloFijo && (
+          <motion.div className="titulo-fijo" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.12 }}>
+            <span className="titulo-fijo-texto">{plan.titulo}</span>
+            <button className="chip-estado" onClick={() => document.querySelector(".detalle-pasos")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
+              {ESTADOS.find((e) => e.id === plan.estado)?.emoji} {ESTADOS.find((e) => e.id === plan.estado)?.nombre}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <header className="ficha-cabeza" ref={cabecera}>
         <div className="ficha-banda">
           <button className="banda-cat" onClick={() => setCambiarCat(true)}>
             {cat?.emoji} {cat?.nombre} <span aria-hidden>▾</span>
@@ -95,6 +119,7 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
       )}
 
       <Bloque
+        id="ganas"
         titulo="Ganas"
         className="ganas-bloque"
         accion={<span className="ganas-promedio num">{ciego || prom === null ? "¿?" : `${Math.round(prom)}%`}</span>}
@@ -148,6 +173,8 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
         {plan.hecho_en && ` · hecho el ${new Date(plan.hecho_en.replace(" ", "T")).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}`}
       </p>
 
+      <BarraAccion plan={plan} personalidad={personalidad} />
+
       <Hoja abierta={cambiarCat} onCerrar={() => setCambiarCat(false)} titulo="Cambiar categoría">
         <div className="grilla-cats">
           {categorias.map((c) => (
@@ -166,6 +193,57 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
           ))}
         </div>
       </Hoja>
+    </div>
+  )
+}
+
+/**
+ * La barra fija de abajo: la única acción que conviene ahora (votar, agendar,
+ * tachar el próximo ítem de la valija o del proyecto, marcarlo hecho o
+ * completar el recuerdo). Respeta el área segura del teléfono.
+ */
+function BarraAccion({ plan, personalidad }: { plan: Plan; personalidad: Personalidad }) {
+  const votos = useStore((s) => s.votos)
+  const items = useStore((s) => s.items)
+  const usuarios = useStore((s) => s.usuarios)
+  const yo = useYo()
+  const [ocupado, setOcupado] = useState(false)
+  const a = accionPrincipal(plan, personalidad, votos, items, usuarios, yo?.id)
+
+  const llevarA = (id: string, foco?: string) => {
+    const el = document.getElementById(id)
+    el?.scrollIntoView({ behavior: "smooth", block: "center" })
+    if (foco) setTimeout(() => (el?.querySelector(foco) as HTMLElement | null)?.focus({ preventScroll: true }), 400)
+  }
+
+  const hacer = async (ev: React.MouseEvent) => {
+    if (ocupado) return
+    switch (a.tipo) {
+      case "votar":
+        return llevarA("ganas", ".ganas.editable .ganas-pista")
+      case "estado":
+        return cambiarEstado(plan, a.estado, ev)
+      case "item":
+        vibrar(10)
+        return editarItem(a.itemId, { hecho: true })
+      case "puntuar":
+        return llevarA("puntajes")
+      case "resena":
+        return llevarA("puntajes", "textarea")
+      case "foto":
+      case "fotos":
+        setOcupado(true)
+        await subirFotos(plan)
+        setOcupado(false)
+    }
+  }
+
+  return (
+    <div className="cta-fija">
+      <Boton className="boton-grande" onClick={hacer} disabled={ocupado}>
+        <span className="cta-texto">{ocupado ? "Subiendo…" : a.texto}</span>
+        <small>{a.sub}</small>
+      </Boton>
     </div>
   )
 }
@@ -208,7 +286,7 @@ function Puntajes({ plan }: { plan: Plan }) {
   const mio = votos.find((v) => v.usuario === yo?.id)
   const [resena, setResena] = useState<string | null>(null)
   return (
-    <Bloque titulo="¿Qué tal estuvo?" className="puntajes">
+    <Bloque id="puntajes" titulo="¿Qué tal estuvo?" className="puntajes">
       {usuarios.map((u, i) => {
         const v = votos.find((x) => x.usuario === u.id)
         const esYo = u.id === yo?.id

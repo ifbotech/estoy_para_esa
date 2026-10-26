@@ -103,21 +103,24 @@ export function ListaItems({ plan, lista, nombre, placeholder }: { plan: Plan; l
   )
 }
 
+/** Elegir fotos, achicarlas en el teléfono y subirlas al plan. */
+export async function subirFotos(plan: Plan, avance?: (n: number) => void) {
+  const archivos = await elegirArchivos(true)
+  if (!archivos.length) return
+  avance?.(archivos.length)
+  const fd = new FormData()
+  for (const a of archivos) fd.append("fotos+", await achicar(a))
+  await editarPlan(plan.id, fd)
+  avance?.(0)
+  avisar(archivos.length === 1 ? "Foto guardada 📸" : `${archivos.length} fotos guardadas 📸`)
+}
+
 /** Las fotos del plan: el recuerdo. */
 export function Fotos({ plan }: { plan: Plan }) {
   const [subiendo, setSubiendo] = useState(0)
   const [abierta, setAbierta] = useState<string | null>(null)
 
-  const subir = async () => {
-    const archivos = await elegirArchivos(true)
-    if (!archivos.length) return
-    setSubiendo(archivos.length)
-    const fd = new FormData()
-    for (const a of archivos) fd.append("fotos+", await achicar(a))
-    await editarPlan(plan.id, fd)
-    setSubiendo(0)
-    avisar(archivos.length === 1 ? "Foto guardada 📸" : `${archivos.length} fotos guardadas 📸`)
-  }
+  const subir = () => subirFotos(plan, setSubiendo)
 
   const borrar = async (f: string) => {
     if (!confirm("¿Borrar esta foto?")) return
@@ -127,6 +130,7 @@ export function Fotos({ plan }: { plan: Plan }) {
 
   return (
     <Bloque
+      id="fotos"
       titulo="Fotos"
       accion={
         <Boton variante="secundario" className="boton-chico" onClick={subir} disabled={subiendo > 0}>

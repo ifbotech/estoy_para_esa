@@ -16,7 +16,9 @@ export function Bloque({
   children,
   className = "",
   style,
+  id,
 }: {
+  id?: string
   numero?: string
   titulo: ReactNode
   accion?: ReactNode
@@ -25,7 +27,7 @@ export function Bloque({
   style?: CSSProperties
 }) {
   return (
-    <section className={`bloque ${className}`} style={style}>
+    <section className={`bloque ${className}`} style={style} id={id}>
       <header className="bloque-cabeza">
         {numero && <span className="bloque-num">{numero}</span>}
         <h2 className="bloque-titulo">{titulo}</h2>
@@ -58,7 +60,7 @@ export function Segmentos({ hechos, total, etiqueta, max = 16 }: { hechos: numbe
   )
 }
 
-/** La etiqueta de simetría de un plan: 🔥 MATCH, 🤝 CONSENSO o 🎁 POR AMOR AL ARTE. */
+/** La etiqueta de simetría de un plan: 🔥 MATCH, 🤝 CONSENSO o 🎁 CON AMOR. */
 export function EtiquetaSimetria({ votos, chica = false }: { votos: Voto[]; chica?: boolean }) {
   const s = simetria(votos)
   if (!s) return null

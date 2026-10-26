@@ -428,3 +428,62 @@
 .version-info { display: grid; gap: 6px; align-content: start; }
 .version-info h3 { font-size: 22px; text-transform: uppercase; font-stretch: 80%; font-variation-settings: "wdth" 80; }
 .version-info p { font-size: 13.5px; }
+
+/* --- plan: título fijo arriba y acción fija abajo ------------------------- */
+.titulo-fijo {
+  position: fixed;
+  top: calc(var(--barra-alto) + var(--sup-arriba));
+  left: 0;
+  right: 0;
+  z-index: 39;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 48px;
+  padding: 4px 16px;
+  background: var(--superficie);
+  border-bottom: var(--borde);
+  box-shadow: inset 8px 0 0 var(--cc);
+}
+.titulo-fijo-texto { flex: 1; min-width: 0; font-family: var(--f-display); font-weight: 800; font-size: 18px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-stretch: 80%; font-variation-settings: "wdth" 80; }
+.chip-estado {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 2px 8px;
+  border: 1.5px solid var(--tinta);
+  border-radius: 3px;
+  background: var(--superficie);
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.titulo-fijo .chip-estado { min-height: var(--toque); }
+.tarjeta-meta .chip-estado { min-height: 26px; position: relative; }
+/* el área táctil del chip de la tarjeta llega a 44 px sin agrandar el dibujo */
+.tarjeta-meta .chip-estado::after { content: ""; position: absolute; inset: -9px -4px; }
+.chip-estado:active { background: var(--tinta); color: var(--papel); }
+
+.cta-fija {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 10px 16px calc(var(--sup-abajo) + 10px);
+  background: var(--papel);
+  border-top: var(--borde);
+}
+@media (min-width: 600px) { .cta-fija { border-inline: var(--borde); } }
+.cta-fija .boton-grande { min-height: 56px; }
+.cta-texto { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.detalle { padding-bottom: calc(var(--cta-alto) - var(--nav-alto)); }

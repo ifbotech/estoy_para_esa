@@ -254,7 +254,11 @@ export function Estrellas({ valor, onCambio, tam = 30 }: { valor: number; onCamb
 
 // --- hoja que sube desde abajo ---------------------------------------------
 
-export function Hoja({ abierta, onCerrar, titulo, children }: { abierta: boolean; onCerrar: () => void; titulo?: string; children: ReactNode }) {
+/**
+ * Hoja que sube desde abajo. `pie` queda fijo abajo (con el área segura del
+ * teléfono): ahí va la acción principal, siempre a mano aunque se scrollee.
+ */
+export function Hoja({ abierta, onCerrar, titulo, children, pie }: { abierta: boolean; onCerrar: () => void; titulo?: string; children: ReactNode; pie?: ReactNode }) {
   const controles = useDragControls()
   useEffect(() => {
     if (!abierta) return
@@ -292,6 +296,7 @@ export function Hoja({ abierta, onCerrar, titulo, children }: { abierta: boolean
             </div>
             {titulo && <h2 className="hoja-titulo">{titulo}</h2>}
             <div className="hoja-cuerpo">{children}</div>
+            {pie && <div className="hoja-pie">{pie}</div>}
           </motion.div>
         </>
       )}

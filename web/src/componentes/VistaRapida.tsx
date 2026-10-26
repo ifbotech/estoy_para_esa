@@ -14,15 +14,12 @@ export function VistaRapida() {
   const img = plan ? imagenDe(plan, "200x200") : ""
 
   return (
-    <Hoja abierta={Boolean(plan)} onCerrar={cerrar} titulo={plan?.titulo}>
-      {plan && (
-        <div className="rapida">
-          <div className="rapida-cabeza" style={{ "--cc": cat?.color || "var(--amarillo)" } as React.CSSProperties}>
-            {img ? <img src={img} alt="" /> : <Arte tipo={cat?.personalidad ?? "salida"} tam={8} />}
-            <ChipCategoria cat={cat} />
-          </div>
-          <Pasos actual={plan.estado} onCambio={(e, ev) => cambiarEstado(plan, e, ev)} />
-          <GanasDeLosDos planId={plan.id} />
+    <Hoja
+      abierta={Boolean(plan)}
+      onCerrar={cerrar}
+      titulo={plan?.titulo}
+      pie={
+        plan && (
           <Boton
             className="boton-grande"
             onClick={() => {
@@ -32,6 +29,17 @@ export function VistaRapida() {
           >
             Abrir el plan →
           </Boton>
+        )
+      }
+    >
+      {plan && (
+        <div className="rapida">
+          <div className="rapida-cabeza" style={{ "--cc": cat?.color || "var(--amarillo)" } as React.CSSProperties}>
+            {img ? <img src={img} alt="" /> : <Arte tipo={cat?.personalidad ?? "salida"} tam={8} />}
+            <ChipCategoria cat={cat} />
+          </div>
+          <Pasos actual={plan.estado} onCambio={(e, ev) => cambiarEstado(plan, e, ev)} />
+          <GanasDeLosDos planId={plan.id} />
         </div>
       )}
     </Hoja>

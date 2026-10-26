@@ -264,9 +264,18 @@ export async function crearPlan(datos: Partial<Plan> | FormData) {
   return rec
 }
 
+/**
+ * Edita un plan. Los cambios simples (estado, título, datos…) se ven al
+ * instante y, si el servidor los rechaza, se vuelve atrás. Los archivos
+ * (FormData) y los «fotos-» esperan la respuesta.
+ */
 export async function editarPlan(id: string, datos: Partial<Plan> | FormData | Record<string, unknown>) {
+  const antes = estado.planes.find((p) => p.id === id)
+  const simple = !(datos instanceof FormData) && Object.keys(datos).every((k) => !/[+-]$/.test(k))
+  if (antes && simple) aplicar("planes", "update", { ...antes, ...(datos as Partial<Plan>) })
   const rec = await intentar(() => pb.collection("planes").update<Plan>(id, datos))
   if (rec) aplicar("planes", "update", rec)
+  else if (antes && simple) aplicar("planes", "update", antes)
   return rec
 }
 

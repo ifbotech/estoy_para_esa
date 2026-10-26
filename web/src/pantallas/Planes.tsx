@@ -52,7 +52,16 @@ export function Planes({ ruta }: { ruta: Ruta }) {
 
       <div className="filtro-estados" role="tablist" aria-label="Estado">
         {ESTADOS.map((e, i) => (
-          <button key={e.id} role="tab" aria-selected={estado === e.id} className={`filtro-estado ${estado === e.id ? "activo" : ""}`} onClick={() => setEstado(e.id)}>
+          <button
+            key={e.id}
+            role="tab"
+            aria-selected={!busqueda.trim() && estado === e.id}
+            className={`filtro-estado ${!busqueda.trim() && estado === e.id ? "activo" : ""}`}
+            onClick={() => {
+              setEstado(e.id)
+              setBusqueda("")
+            }}
+          >
             <span className="filtro-num num">{String(i + 1).padStart(2, "0")}</span>
             <span className="filtro-nombre">{e.nombre}</span>
             <span className="filtro-cuenta num">{cuenta(e.id)}</span>
@@ -83,7 +92,12 @@ export function Planes({ ruta }: { ruta: Ruta }) {
 
       <div className="lista-planes">
         {lista.map((r, i) => (
-          <TarjetaPlan key={r.plan.id} r={r} puesto={estado !== "hecho" && estado !== "agendado" && !busqueda && r.promedio !== null ? i + 1 : undefined} />
+          <TarjetaPlan
+            key={r.plan.id}
+            r={r}
+            conEstado={Boolean(busqueda.trim())}
+            puesto={estado !== "hecho" && estado !== "agendado" && !busqueda && r.promedio !== null ? i + 1 : undefined}
+          />
         ))}
       </div>
 

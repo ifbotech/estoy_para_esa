@@ -22,8 +22,27 @@ try {
 // Las versiones del archivo no se instalan ni registran service worker: son
 // para mirar. Cuando se publica una versión nueva, el service worker nuevo
 // toma el control solo y recarga la app una vez (ver sw.ts).
+//
+// En el iPhone, tocar el ícono de una app que quedó en segundo plano no la
+// vuelve a abrir: retoma la pantalla. Por eso se pregunta si hay versión
+// nueva cada vez que la app vuelve a primer plano (y cada media hora).
 if (!enArchivo && window.top === window && "serviceWorker" in navigator) {
-  registerSW({ immediate: true })
+  registerSW({
+    immediate: true,
+    onRegisteredSW(_url, registro) {
+      if (!registro) return
+      let ultima = 0
+      const revisar = () => {
+        if (Date.now() - ultima < 60 * 1000 || !navigator.onLine) return
+        ultima = Date.now()
+        registro.update().catch(() => {})
+      }
+      document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && revisar())
+      addEventListener("focus", revisar)
+      addEventListener("online", revisar)
+      setInterval(revisar, 30 * 60 * 1000)
+    },
+  })
 }
 
 createRoot(document.getElementById("app")!).render(

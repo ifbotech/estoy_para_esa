@@ -36,6 +36,13 @@ export function Wrapped({ anio }: { anio: number }) {
     setI(0)
   }, [anio])
 
+  // Si la app pasa a segundo plano, las historias se pausan (y no avanzan solas).
+  useEffect(() => {
+    const f = () => setPausa(document.visibilityState !== "visible")
+    document.addEventListener("visibilitychange", f)
+    return () => document.removeEventListener("visibilitychange", f)
+  }, [])
+
   useEffect(() => {
     if (pausa) {
       transcurrido.current += Date.now() - inicio.current

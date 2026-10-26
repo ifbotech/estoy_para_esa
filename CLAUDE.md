@@ -15,10 +15,14 @@ App compartida de Rocío e Iñaki para guardar y seguir sus plancitos. Leé
 - **Idioma**: todo en español rioplatense (código, comentarios, textos de la
   app, commits). Voseo en la interfaz.
 - **Estética (v3, «Brutalismo editorial»)**: neo-brutalismo calmo y legible.
-  Papel y tinta, `border: 2px solid var(--tinta)`, sombras duras sin
-  desenfoque (`--sombra` 4 px, `--sombra-chica` 2 px), radio de 6 px en todo,
-  números en monoespaciada (`.num`), cabezales de bloque en mayúsculas. Lo
-  que se toca se hunde (`:active` → `translate(2px, 2px)` y sombra 0, 80 ms).
+  Papel hueso (`#F5F2E8`) y tinta (`#121211`, contraste AAA),
+  `border: 2px solid var(--tinta)`, sombras duras sin desenfoque (`--sombra`
+  3 px, `--sombra-chica` 2 px), radio de 6 px en todo, números en
+  monoespaciada (`.num`), cabezales de bloque en mayúsculas. Lo que se toca
+  se hunde (`:active` y `:focus-visible` → `translate(2px, 2px)` y sombra 0,
+  80 ms). Proximidad: compacto adentro de una tarjeta (`--gap-adentro`,
+  6 px) y aire entre bloques (`--gap-bloques`, 24 px). Sin prefijos
+  redundantes («Estado: Idea» → un chip; «Precio: $$» → `$$`).
   **Nada se mueve solo**: sin marquesinas, sin cosas flotando, sin
   inclinaciones (sólo las Polaroids, 1° como mucho), sin grano. Los
   personajes (`Arte.tsx`) son un detalle quieto adentro de un bloque.
@@ -29,6 +33,20 @@ App compartida de Rocío e Iñaki para guardar y seguir sus plancitos. Leé
   Cada categoría trae su color de la base (`--cc`), y se usa en pills,
   cabezales y barras, nunca de fondo de pantalla entera. La colección
   `temas` queda en la base sólo por las versiones archivadas.
+- **Acción fija**: en el detalle de un plan no va la barra de navegación:
+  abajo queda una barra fija (con el área segura) con la única acción que
+  conviene ahora (`accionPrincipal` en `calculos.ts`: votar, agendar, tachar
+  el próximo ítem de la valija o del proyecto, marcarlo hecho o completar el
+  recuerdo), y arriba el título queda fijo al scrollear. En las hojas, la
+  acción principal va en `pie` (fija abajo).
+- **Psicología de producto**: las ganas se votan a ciegas (la barra del otro
+  rayada con «¿?%» hasta que votes; se destapa con una transición y, si los
+  dos tienen 85 o más, sello de ¡MATCH TOTAL! y vibración). Etiquetas de
+  simetría: 🔥 Match, 🤝 Consenso, 🎁 Con amor. Nada de rachas que se
+  pierden: sólo lo logrado. Cambios de estado, votos e ítems son optimistas.
+- **Actualizaciones**: el service worker nuevo toma el control y recarga la
+  app; además la app pregunta por versión nueva cada vez que vuelve a primer
+  plano (en iPhone, tocar el ícono retoma la pantalla, no la recarga).
 - **Versiones visuales**: cuando se arranca un rediseño grande, agregá una
   entrada nueva arriba en `web/src/versiones.json` (`v2`, `v3`…) para que la
   anterior quede en el Archivo.

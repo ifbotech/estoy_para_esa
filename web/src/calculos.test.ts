@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
-  aCiegas, barriosConquistados, candidatosSorteo, curaduriaPelis, demorasRodillo, esMatchTotal, momentum,
+  accionPrincipal, aCiegas, barriosConquistados, candidatosSorteo, curaduriaPelis, demorasRodillo, esMatchTotal, momentum,
   promedioGanas, rachaMaxima, rankear, resumenAnual, sellado, simetria, sortear,
 } from "./calculos"
-import type { Categoria, Item, Plan, Usuario, Voto } from "./tipos"
+import type { Categoria, Item, Lista, Plan, Usuario, Voto } from "./tipos"
 
 const base = { collectionId: "", collectionName: "", updated: "" }
 
@@ -56,7 +56,7 @@ describe("simetría de ganas", () => {
     expect(simetria(v(79, 99))).toBe("consenso")
   })
 
-  it("POR AMOR AL ARTE con 45 puntos o más de diferencia", () => {
+  it("CON AMOR (por amor al arte) con 45 puntos o más de diferencia", () => {
     expect(simetria(v(100, 20))).toBe("por_amor")
     expect(simetria(v(50, 95))).toBe("por_amor")
   })
@@ -123,6 +123,47 @@ describe("sello de un recuerdo", () => {
     const p = plan("p", { estado: "hecho", fotos: ["a.jpg"] })
     const votos = [voto("p", "i", 80, 4), { ...voto("p", "r", 60, 3.5), resena: "Muy rica" }]
     expect(sellado(p, votos, usuarios).completo).toBe(true)
+  })
+})
+
+describe("acción principal (barra fija)", () => {
+  const usuarios = [{ ...base, id: "i", name: "Iñaki" }, { ...base, id: "r", name: "Rocío" }] as Usuario[]
+  const item = (id: string, lista: Lista, hecho = false, dia = 0): Item => ({
+    ...base, id, plan: "p", lista, texto: id, hecho, orden: Number(id.replace(/\D/g, "")) || 0, dia, veredicto: "", created: "",
+  })
+
+  it("idea: primero votar a ciegas, después agendar", () => {
+    expect(accionPrincipal(plan("p"), "cine", [], [], usuarios, "i").tipo).toBe("votar")
+    expect(accionPrincipal(plan("p"), "cine", [voto("p", "i", 70)], [], usuarios, "i")).toMatchObject({ tipo: "estado", estado: "agendado" })
+  })
+
+  it("viaje agendado: armar la valija y después salir", () => {
+    const p = plan("p", { estado: "agendado" })
+    const a = accionPrincipal(p, "viaje", [], [item("v1", "valija", true), item("v2", "valija")], usuarios, "i")
+    expect(a).toMatchObject({ tipo: "item", itemId: "v2", sub: "a la valija · 1/2" })
+    expect(accionPrincipal(p, "viaje", [], [item("v1", "valija", true)], usuarios, "i")).toMatchObject({ tipo: "estado", estado: "en_curso" })
+  })
+
+  it("DIY en curso: tachar el próximo paso y terminar", () => {
+    const p = plan("p", { estado: "en_curso" })
+    expect(accionPrincipal(p, "taller", [], [item("p1", "pasos", true), item("p2", "pasos")], usuarios, "i")).toMatchObject({ itemId: "p2", sub: "paso 2 de 2" })
+    expect(accionPrincipal(p, "taller", [], [item("p1", "pasos", true)], usuarios, "i")).toMatchObject({ tipo: "estado", estado: "hecho", texto: "✓ ¡Terminado!" })
+  })
+
+  it("viaje en curso: el itinerario por día", () => {
+    const a = accionPrincipal(plan("p", { estado: "en_curso" }), "viaje", [], [item("d2", "itinerario", false, 2), item("d1", "itinerario", true, 1)], usuarios, "i")
+    expect(a).toMatchObject({ itemId: "d2", sub: "Día 2 · hito 2 de 2" })
+  })
+
+  it("hecho: completa el recuerdo en orden (puntaje, foto, nota)", () => {
+    const p = plan("p", { estado: "hecho" })
+    expect(accionPrincipal(p, "cafe", [], [], usuarios, "i").tipo).toBe("puntuar")
+    expect(accionPrincipal(p, "cafe", [voto("p", "i", 50, 4)], [], usuarios, "i").tipo).toBe("foto")
+    const conFoto = plan("p", { estado: "hecho", fotos: ["a.jpg"] })
+    expect(accionPrincipal(conFoto, "cafe", [voto("p", "i", 50, 4)], [], usuarios, "i").tipo).toBe("resena")
+    const conNota = plan("p", { estado: "hecho", fotos: ["a.jpg"], notas: "rico" })
+    expect(accionPrincipal(conNota, "cafe", [voto("p", "i", 50, 4)], [], usuarios, "i").sub).toBe("falta el puntaje de Rocío")
+    expect(accionPrincipal(conNota, "cafe", [voto("p", "i", 50, 4), voto("p", "r", 50, 3)], [], usuarios, "i").sub).toContain("sellado")
   })
 })
 

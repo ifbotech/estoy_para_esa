@@ -14,9 +14,10 @@ de fin de año.
 | | |
 |---|---|
 | **Hoy** | Un tablero en bloques: lo que está **en curso o agendado** como ticket (con valija o pasos), el **top de ganas**, la máquina **«Sorpréndanme»** y el **sello pendiente** (o el último recuerdo). Abajo, el ritmo de los dos. |
-| **Ganas** | Cada uno marca de 0 a 100. **Voto a ciegas**: si el otro ya votó, su número queda tapado hasta que votes vos; al votar se destapa y, si los dos están en 85 o más, sale el sello **¡MATCH TOTAL!**. En la lista, cada plan dice si es 🔥 **Match** (los dos ≥ 80), 🤝 **Consenso** (≤ 20 de diferencia) o 🎁 **Por amor al arte** (≥ 45 de diferencia). |
+| **Ganas** | Cada uno marca de 0 a 100. **Voto a ciegas**: si el otro ya votó, su número queda tapado hasta que votes vos; al votar se destapa y, si los dos están en 85 o más, sale el sello **¡MATCH TOTAL!**. En la lista, cada plan dice si es 🔥 **Match** (los dos ≥ 80), 🤝 **Consenso** (≤ 20 de diferencia) o 🎁 **Con amor** (≥ 45 de diferencia: uno acompaña al otro). |
 | **Sorpréndanme** | Filtros (Todo, En casa, Salir, Rápido), un rodillo que pasa por los planes con más ganas y frena de a poco en 1,4 s, y el boleto ganador con «¡Estamos para esa!» (lo agenda para hoy) o «1 tiro más». |
-| **Planes** | Filas técnicas ordenadas por ganas, filtrables por estado, categoría y búsqueda. Deslizar avanza el estado; doble toque = ¡estoy para esa!; mantener = vista rápida. |
+| **Planes** | Filas técnicas ordenadas por ganas, filtrables por estado, categoría y búsqueda (al buscar, cada fila trae su estado como chip que se toca para avanzarlo). Deslizar avanza el estado; doble toque = ¡estoy para esa!; mantener = vista rápida. |
+| **Cada plan** | Arriba el título queda fijo al scrollear; abajo, una **barra de acción fija** con lo único que conviene ahora: votar, agendar, tachar lo próximo de la valija o del proyecto, marcarlo hecho, puntuar, subir la foto o escribir la reseña. |
 | **Recuerdos** | Polaroids por mes. Un recuerdo queda **100 % sellado** con el puntaje de los dos, una foto y una nota o reseña; lo que falta se ve y se completa en un toque. |
 | **Pelis** 🎬 | Ficha técnica, Letterboxd (póster, año, dirección y **promedio de Letterboxd**) y **curaduría de pareja**: quién es más duro, coincidencia crítica, mayor acuerdo y desacuerdo, ustedes vs. Letterboxd. Importa el diario de Letterboxd. |
 | **Comida, café y salidas** ☕ | Mapa, Instagram, barrio, **barrios conquistados** y «qué pedir», que después de ir se marca **👍 Repetir / 👎 Pasar**. |
@@ -51,6 +52,8 @@ docs/       despliegue y operación
   tiempo real se mezcla con lo pendiente para que nada parpadee.
 - **Sin señal**: el service worker (`web/src/sw.ts`) guarda la app, la
   última copia de los datos (red primero, 4 s) y las fotos.
+- **Actualizaciones**: cada versión nueva se instala sola y recarga la app;
+  la app pregunta si hay una nueva cada vez que vuelve a primer plano.
 - **Fotos**: se achican en el teléfono a 1600 px en JPEG antes de subir.
 
 ## Desarrollo

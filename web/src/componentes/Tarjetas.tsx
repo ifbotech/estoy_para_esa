@@ -139,7 +139,7 @@ export function useGestosPlan(planId: string) {
  * promedio y la etiqueta de simetría. Deslizar a la derecha la pasa al
  * estado siguiente; a la izquierda, al anterior.
  */
-export function TarjetaPlan({ r, puesto, compacta = false }: { r: Rankeado; puesto?: number; compacta?: boolean }) {
+export function TarjetaPlan({ r, puesto, compacta = false, conEstado = false }: { r: Rankeado; puesto?: number; compacta?: boolean; conEstado?: boolean }) {
   const cat = useCategoria(r.plan.categoria)
   const yo = useYo()
   const img = imagenDe(r.plan, "200x200")
@@ -195,6 +195,20 @@ export function TarjetaPlan({ r, puesto, compacta = false }: { r: Rankeado; pues
         <div className="tarjeta-cuerpo">
           <div className="tarjeta-meta">
             <ChipCategoria cat={cat} />
+            {conEstado && (
+              <button
+                className="chip-estado"
+                aria-label={`Estado: ${ESTADOS[i].nombre}. Tocá para pasar a ${siguiente?.nombre ?? "—"}`}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (siguiente) moverEstado(r.plan, 1)
+                }}
+              >
+                {ESTADOS[i].emoji} {ESTADOS[i].nombre}
+                {siguiente && <span aria-hidden> →</span>}
+              </button>
+            )}
             {!ciego && <EtiquetaSimetria votos={r.votos} chica />}
           </div>
           <h3>{r.plan.titulo}</h3>

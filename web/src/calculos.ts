@@ -1,4 +1,4 @@
-import type { Categoria, Item, Personalidad, Plan, Usuario, Voto } from "./tipos"
+import type { Categoria, Estado, Item, Personalidad, Plan, Usuario, Voto } from "./tipos"
 
 // --- ganas y ranking -------------------------------------------------------
 
@@ -52,7 +52,7 @@ export type Simetria = "match" | "consenso" | "por_amor"
 export const SIMETRIAS: Record<Simetria, { etiqueta: string; emoji: string; texto: string }> = {
   match: { etiqueta: "Match", emoji: "🔥", texto: "Los dos tienen muchas ganas" },
   consenso: { etiqueta: "Consenso", emoji: "🤝", texto: "Piensan parecido" },
-  por_amor: { etiqueta: "Por amor al arte", emoji: "🎁", texto: "Uno se muere de ganas y el otro acompaña" },
+  por_amor: { etiqueta: "Con amor", emoji: "🎁", texto: "Uno se muere de ganas y el otro acompaña por amor al arte" },
 }
 
 export const UMBRAL_MATCH = 80
@@ -156,6 +156,78 @@ export function sellado(plan: Plan, votos: Voto[], usuarios: Usuario[]) {
   ]
   const hechos = pasos.filter((p) => p.ok).length
   return { pasos, hechos, total: pasos.length, completo: hechos === pasos.length }
+}
+
+// --- la acción principal de un plan (la barra fija de abajo) ----------------
+
+export type AccionPrincipal =
+  | { tipo: "votar"; texto: string; sub: string }
+  | { tipo: "estado"; texto: string; sub: string; estado: Estado }
+  | { tipo: "item"; texto: string; sub: string; itemId: string }
+  | { tipo: "puntuar" | "foto" | "resena" | "fotos"; texto: string; sub: string }
+
+/**
+ * Lo único que conviene hacer ahora con un plan, según su estado y su
+ * personalidad: votar, agendar, armar la valija, tachar el próximo paso,
+ * marcarlo hecho o completar el recuerdo. Un solo botón, siempre a mano.
+ */
+export function accionPrincipal(
+  plan: Plan,
+  personalidad: Personalidad | undefined,
+  votos: Voto[],
+  items: Item[],
+  usuarios: Usuario[],
+  yo: string | undefined,
+): AccionPrincipal {
+  const vs = votos.filter((v) => v.plan === plan.id)
+  const mio = vs.find((v) => v.usuario === yo)
+  const lista = (l: Item["lista"]) => items.filter((i) => i.plan === plan.id && i.lista === l).sort((a, b) => a.dia - b.dia || a.orden - b.orden)
+  const proximo = (l: Item["lista"]) => {
+    const ls = lista(l)
+    const i = ls.find((x) => !x.hecho)
+    return i ? { item: i, hechos: ls.filter((x) => x.hecho).length, total: ls.length } : null
+  }
+
+  if (plan.estado === "idea") {
+    if (!mio) return { tipo: "votar", texto: "Votá tus ganas", sub: "a ciegas: el otro no te condiciona" }
+    return { tipo: "estado", texto: "📅 Agendar", sub: "pasa a Agendado", estado: "agendado" }
+  }
+
+  if (plan.estado === "agendado") {
+    if (personalidad === "viaje") {
+      const v = proximo("valija")
+      if (v) return { tipo: "item", texto: `✓ ${v.item.texto}`, sub: `a la valija · ${v.hechos}/${v.total}`, itemId: v.item.id }
+      return { tipo: "estado", texto: "▶ ¡Nos vamos!", sub: "pasa a En curso", estado: "en_curso" }
+    }
+    if (personalidad === "taller") {
+      const m = proximo("materiales")
+      if (m) return { tipo: "item", texto: `✓ ${m.item.texto}`, sub: `materiales · ${m.hechos}/${m.total}`, itemId: m.item.id }
+      return { tipo: "estado", texto: "▶ Arrancar", sub: "pasa a En curso", estado: "en_curso" }
+    }
+    return { tipo: "estado", texto: "✓ ¡Lo hicimos!", sub: "pasa a Hecho", estado: "hecho" }
+  }
+
+  if (plan.estado === "en_curso") {
+    const l = personalidad === "taller" ? "pasos" : personalidad === "viaje" ? "itinerario" : null
+    const p = l ? proximo(l) : null
+    if (p) {
+      const dia = l === "itinerario" ? `Día ${p.item.dia || 1} · ` : ""
+      return { tipo: "item", texto: `✓ ${p.item.texto}`, sub: `${dia}${l === "pasos" ? "paso" : "hito"} ${p.hechos + 1} de ${p.total}`, itemId: p.item.id }
+    }
+    return { tipo: "estado", texto: personalidad === "viaje" ? "✓ ¡Volvimos!" : personalidad === "taller" ? "✓ ¡Terminado!" : "✓ ¡Lo hicimos!", sub: "pasa a Hecho", estado: "hecho" }
+  }
+
+  // hecho: completar el recuerdo
+  const s = sellado(plan, votos, usuarios)
+  const falta = (id: string) => s.pasos.some((p) => p.id === id && !p.ok)
+  if (yo && falta(`puntaje-${yo}`)) return { tipo: "puntuar", texto: "★ Puntuar", sub: `falta tu puntaje · ${s.hechos}/${s.total} sellado` }
+  if (falta("foto")) return { tipo: "foto", texto: "📷 Subir el recuerdo", sub: `falta la foto · ${s.hechos}/${s.total} sellado` }
+  if (falta("nota")) return { tipo: "resena", texto: "✎ Escribir la reseña", sub: `falta la nota · ${s.hechos}/${s.total} sellado` }
+  if (!s.completo) {
+    const otro = usuarios.find((u) => u.id !== yo && falta(`puntaje-${u.id}`))
+    return { tipo: "fotos", texto: "📷 Sumar fotos", sub: `falta el puntaje de ${otro?.name ?? "el otro"}` }
+  }
+  return { tipo: "fotos", texto: "📷 Sumar fotos", sub: "✦ recuerdo 100 % sellado" }
 }
 
 // --- fechas ----------------------------------------------------------------
