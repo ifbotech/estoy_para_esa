@@ -1,18 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <radialGradient id="f" cx="30%" cy="20%" r="90%">
-      <stop offset="0" stop-color="#3a2a8f"/>
-      <stop offset="1" stop-color="#120f2b"/>
-    </radialGradient>
-    <linearGradient id="s" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff4fa3"/>
-      <stop offset="1" stop-color="#ff8a3d"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#f)"/>
-  <g transform="translate(256 256) rotate(-12)">
-    <polygon fill="#c6ff3d" points="0,-196 40,-120 124,-150 108,-64 192,-36 124,20 170,96 84,100 70,186 0,136 -70,186 -84,100 -170,96 -124,20 -192,-36 -108,-64 -124,-150 -40,-120"/>
-    <circle r="112" fill="url(#s)"/>
-    <text y="40" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="118" fill="#fff6e5" letter-spacing="-6">¡SÍ!</text>
+  <rect width="512" height="512" rx="112" fill="#3F8F3A"/>
+  <defs><radialGradient id="b"><stop offset="0" stop-color="#F2CE2E" stop-opacity=".9"/><stop offset="1" stop-color="#F2CE2E" stop-opacity="0"/></radialGradient></defs><circle cx="256" cy="240" r="230" fill="url(#b)"/>
+  <g transform="translate(256 256) scale(0.92) translate(-256 -256)" stroke="#121211" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- hilos: salen de cada nudo, se cruzan y hacen un rulito -->
+    <path d="M304 305 C 302 346, 272 372, 254 394" fill="none"/>
+    <path d="M204 363 C 212 386, 240 390, 254 394" fill="none"/>
+    <path d="M254 394 C 258 422, 222 440, 210 420 C 198 398, 234 388, 246 412 C 256 434, 256 454, 248 478" fill="none"/>
+    <!-- amarillo: atrás y más arriba, apenas inclinado -->
+    <g transform="rotate(8 304 305)">
+      <path d="M304 288 C 341.6 280, 398 241.60000000000002, 398 162.72
+    C 398 93.12, 358.52 56, 304 56
+    C 249.48000000000002 56, 210 93.12, 210 162.72
+    C 210 241.60000000000002, 266.4 280, 304 288 Z" fill="#F2CE2E"/>
+    <path d="M291 305 L317 305 L304 287 Z" fill="#F2CE2E"/>
+      <path d="M258 120 C 264 98, 278 84, 296 78" fill="none" stroke="#F5F2E8" stroke-width="12" opacity=".9"/>
+    </g>
+    <!-- verde: adelante y más abajo -->
+    <g transform="rotate(-6 204 363)">
+      <path d="M204 346 C 241.6 338, 298 299.6, 298 220.72
+    C 298 151.12, 258.52 114, 204 114
+    C 149.48000000000002 114, 110 151.12, 110 220.72
+    C 110 299.6, 166.4 338, 204 346 Z" fill="#1F5A2A"/>
+    <path d="M191 363 L217 363 L204 345 Z" fill="#1F5A2A"/>
+      <path d="M150 182 C 156 158, 170 144, 190 138" fill="none" stroke="#F5F2E8" stroke-width="12"/>
+    </g>
   </g>
 </svg>

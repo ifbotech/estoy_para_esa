@@ -28,8 +28,8 @@
 /* --- entrada -------------------------------------------------------------- */
 .login { min-height: 100dvh; display: grid; place-items: center; padding: calc(var(--sup-arriba) + 24px) 16px calc(var(--sup-abajo) + 24px); }
 .login-ficha { width: min(100%, 420px); background: var(--superficie); border: var(--borde); border-radius: var(--radio); box-shadow: 6px 6px 0 var(--tinta); overflow: hidden; }
-.login-cabeza { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--amarillo); border-bottom: var(--borde); }
-.login-marca { font-family: var(--f-display); font-weight: 800; letter-spacing: 0.05em; }
+.login-cabeza { --globos-fondo: var(--amarillo); display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--amarillo); border-bottom: var(--borde); }
+.login-marca { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-display); font-weight: 800; letter-spacing: 0.05em; }
 .login-arte { display: flex; align-items: flex-end; justify-content: center; gap: 14px; padding: 18px 14px 12px; background: var(--papel); border-bottom: var(--borde); }
 .login-paso { display: grid; gap: 14px; padding: 18px 16px 16px; }
 .login-titulo { font-size: 44px; text-transform: uppercase; line-height: 0.92; font-stretch: 75%; font-variation-settings: "wdth" 75; }

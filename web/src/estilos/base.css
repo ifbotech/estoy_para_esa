@@ -132,7 +132,8 @@ h1, h2, h3, h4 { font-family: var(--f-display); font-weight: 800; line-height: 1
   border-bottom: var(--borde);
 }
 .barra-marca { font-family: var(--f-display); font-weight: 800; font-size: 17px; letter-spacing: 0.04em; display: inline-flex; align-items: center; min-height: var(--toque); }
-.barra-marca b { margin-left: 4px; }
+.barra-marca { gap: 6px; }
+.globos { flex: none; display: inline-block; vertical-align: -0.2em; }
 .barra-volver { display: inline-flex; align-items: center; gap: 8px; min-height: var(--toque); padding-right: 10px; font-family: var(--f-mono); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 .barra-der { display: flex; align-items: center; gap: 8px; }
 .barra-chip { font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border: var(--borde); border-radius: var(--radio); background: var(--superficie); white-space: nowrap; }
@@ -528,7 +529,7 @@ input[type="color"]::-moz-color-swatch { border: 0; }
 .vacio { display: grid; justify-items: center; gap: 12px; padding: 28px 16px; margin-top: 16px; border: 2px dashed var(--tinta); border-radius: var(--radio); text-align: center; color: var(--suave); font-weight: 600; }
 .vacio-chico { padding: 16px; margin-top: 0; }
 .cargando { min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 24px; }
-.cargando-marca { font-family: var(--f-display); font-weight: 800; font-size: 26px; letter-spacing: 0.04em; }
+.cargando-marca { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-display); font-weight: 800; font-size: 26px; letter-spacing: 0.04em; }
 .cargando-barra { display: block; width: 180px; height: 16px; border: var(--borde); border-radius: 3px; background: var(--superficie); overflow: hidden; }
 .cargando-barra i { display: block; width: 35%; height: 100%; background: var(--tinta); animation: vaiven calc(900ms / max(var(--mov), 0.01)) steps(8) infinite alternate; }
 @keyframes vaiven { to { translate: 190% 0; } }
