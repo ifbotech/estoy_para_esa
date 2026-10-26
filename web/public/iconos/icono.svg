@@ -1,18 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <radialGradient id="f" cx="30%" cy="20%" r="90%">
-      <stop offset="0" stop-color="#3a2a8f"/>
-      <stop offset="1" stop-color="#120f2b"/>
-    </radialGradient>
-    <linearGradient id="s" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff4fa3"/>
-      <stop offset="1" stop-color="#ff8a3d"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#f)"/>
-  <g transform="translate(256 256) rotate(-12)">
-    <polygon fill="#c6ff3d" points="0,-196 40,-120 124,-150 108,-64 192,-36 124,20 170,96 84,100 70,186 0,136 -70,186 -84,100 -170,96 -124,20 -192,-36 -108,-64 -124,-150 -40,-120"/>
-    <circle r="112" fill="url(#s)"/>
-    <text y="40" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="118" fill="#fff6e5" letter-spacing="-6">¡SÍ!</text>
+  <rect width="512" height="512" rx="112" fill="#F5F2E8"/>
+  <g transform="translate(256 256) scale(0.92) translate(-256 -256)" stroke="#121211" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <!-- hilos: salen de cada nudo, se cruzan y bajan juntos -->
+    <path d="M300 324 C 298 356, 266 370, 252 392" fill="none"/>
+    <path d="M206 334 C 210 362, 238 374, 252 392" fill="none"/>
+    <path d="M252 392 C 256 420, 220 438, 208 418 C 196 396, 232 386, 244 410 C 254 432, 254 452, 246 476" fill="none"/>
+    <!-- mostaza, atrás -->
+    <ellipse cx="300" cy="196" rx="94" ry="112" fill="#E0A82E"/>
+    <path d="M286 306 L314 306 L322 324 L278 324 Z" fill="#E0A82E"/>
+    <!-- oliva, adelante -->
+    <ellipse cx="206" cy="206" rx="94" ry="112" fill="#7D8C3C"/>
+    <path d="M192 316 L220 316 L228 334 L184 334 Z" fill="#7D8C3C"/>
+    <path d="M156 160 C 162 138, 176 124, 194 118" fill="none" stroke="#F5F2E8" stroke-width="12"/>
+    <path d="M262 146 C 268 128, 280 116, 296 110" fill="none" stroke="#F5F2E8" stroke-width="12" opacity=".9"/>
   </g>
 </svg>
