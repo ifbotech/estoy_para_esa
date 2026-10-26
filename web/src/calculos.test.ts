@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
   accionPrincipal, aCiegas, barriosConquistados, candidatosSorteo, curaduriaPelis, demorasRodillo, esMatchTotal, momentum,
-  promedioGanas, rachaMaxima, rankear, resumenAnual, sellado, simetria, sortear,
+  numerosActividad, promedioGanas, rachaMaxima, rankear, resumenAnual, resumenPeriodo, sellado, simetria, sortear,
 } from "./calculos"
-import type { Categoria, Item, Lista, Plan, Usuario, Voto } from "./tipos"
+import type { Actividad, Categoria, Item, Lista, Plan, Usuario, Voto } from "./tipos"
 
 const base = { collectionId: "", collectionName: "", updated: "" }
 
@@ -269,5 +269,37 @@ describe("wrapped", () => {
     expect(r.desacuerdo?.diferencia).toBe(60)
     expect(r.masRapido?.dias).toBe(9)
     expect(r.curaduria.porPersona.map((x) => x.usuario).sort()).toEqual(["i", "r"])
+  })
+
+  it("a mitad de año cuenta sólo el primer semestre", () => {
+    const categorias = [cat("c-cine", "cine")]
+    const planes = [
+      plan("enero", { estado: "hecho", hecho_en: "2026-01-10 20:00:00Z", created: "2026-01-01 10:00:00Z" }),
+      plan("junio", { estado: "hecho", hecho_en: "2026-06-30 20:00:00Z", created: "2026-03-01 10:00:00Z" }),
+      plan("julio", { estado: "hecho", hecho_en: "2026-07-02 20:00:00Z", created: "2026-07-01 10:00:00Z" }),
+    ]
+    const r = resumenPeriodo({ anio: 2026, tipo: "mitad", desde: new Date(2026, 0, 1), hasta: new Date(2026, 6, 1) }, planes, [], categorias, [])
+    expect(r.total).toBe(2)
+    expect(r.meses).toBe(6)
+    expect(r.ideasNuevas).toBe(2)
+  })
+
+  it("cuenta el diario de actividad", () => {
+    const a = (tipo: Actividad["tipo"], usuario = "i", datos = {}, titulo = "x", cuando = "2026-03-07 15:00:00Z"): Actividad => ({
+      tipo, usuario, datos, titulo, cuando, plan: "p", categoria: "c",
+    })
+    const n = numerosActividad([
+      a("plan_nuevo"), a("plan_nuevo"), a("plan_nuevo", "r"), a("ganas"), a("ganas", "r"),
+      a("match", "r", {}, "Perfect Days"), a("fotos", "i", { cantidad: 5 }), a("item_hecho"),
+    ])
+    expect(n.ideas).toBe(3)
+    expect(n.ideasPorPersona[0]).toEqual({ usuario: "i", cantidad: 2 })
+    expect(n.votos).toBe(2)
+    expect(n.matches).toBe(1)
+    expect(n.planesMatch).toEqual(["Perfect Days"])
+    expect(n.fotos).toBe(5)
+    expect(n.tachados).toBe(1)
+    expect(n.diaTop).toBe(new Date("2026-03-07T15:00:00Z").getDay())
+    expect(numerosActividad([]).diaTop).toBeNull()
   })
 })

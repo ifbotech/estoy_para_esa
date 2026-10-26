@@ -74,6 +74,26 @@ sudo -u deploy EPE_PASSWORD='…' /var/www/estoyparaesa/current/bin/estoyparaesa
 
 Se entra con el nombre corto (`inaki`, `rocio`) o el email.
 
+## Wrapped (30/6 y 31/12)
+
+Los arma el servidor solo, con un cron de PocketBase a las 12:00 UTC (9 de
+la mañana en Argentina): congela el período en la colección `wraps`, avisa
+por push y lo deja abierto 21 días. Sale del diario `actividad`, que llenan
+los hooks con cada cosa que pasa (se ve en el panel de datos).
+
+Para probarlo o rehacerlo a mano, como superusuario:
+
+```bash
+TOKEN=$(curl -s -X POST https://ifbotech.com/estoyparaesa/api/collections/_superusers/auth-with-password \
+  -H 'content-type: application/json' -d '{"identity":"…","password":"…"}' | jq -r .token)
+curl -X POST https://ifbotech.com/estoyparaesa/api/epe/wrap/generar -H "Authorization: $TOKEN" \
+  -H 'content-type: application/json' -d '{"anio": 2026, "tipo": "anio", "dias": 1}'
+```
+
+`tipo` es `mitad` o `anio`; `dias`, cuánto queda abierto. Con `"avisar": true`
+hace lo mismo que el cron (el período de hoy y el push). Para cerrarlo antes,
+cambiá `cierra` en el panel de datos.
+
 ## Versiones de la app (el Archivo)
 
 Cada versión visual de la app tiene un id en `web/src/versiones.json` (la

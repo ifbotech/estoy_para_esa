@@ -3,8 +3,9 @@
 La app de Rocío e Iñaki para no perder ningún plancito: pelis, comidas,
 cafecitos, viajes, DIY, salidas y lo que vaya surgiendo. Cada uno marca las
 **ganas que tiene** de cada plan, el promedio lo ubica en la lista, y cuando
-lo hacen queda como recuerdo con fotos, puntaje y todo, hasta el **Wrapped**
-de fin de año.
+lo hacen queda con fotos y puntaje. Todo lo que pasa se anota en un diario
+del servidor, y dos veces por año (30 de junio y 31 de diciembre) llega el
+**Wrapped**, como el de Spotify.
 
 **https://ifbotech.com/estoyparaesa/**: se instala en el inicio del teléfono
 (Safari → Compartir → Agregar a inicio).
@@ -18,12 +19,11 @@ de fin de año.
 | **Sorpréndanme** | Filtros (Todo, En casa, Salir, Rápido), un rodillo que pasa por los planes con más ganas y frena de a poco en 1,4 s, y el boleto ganador con «¡Estamos para esa!» (lo agenda para hoy) o «1 tiro más». |
 | **Planes** | **Todos** los pendientes en filas técnicas ordenadas por ganas, con **voto de un toque** abajo de los que te faltan votar (a ciegas) y el filtro «Por votar». Filtrables por estado, categoría y búsqueda (al buscar, cada fila trae su estado como chip que se toca para avanzarlo). Deslizar avanza el estado; doble toque = ¡estoy para esa!; mantener = vista rápida. Abajo, la máquina **«Sorpréndanme»**. |
 | **Cada plan** | Arriba el título queda fijo al scrollear; abajo, una **barra de acción fija** con lo único que conviene ahora: votar, agendar, tachar lo próximo de la valija o del proyecto, marcarlo hecho, puntuar, subir la foto o escribir la reseña. |
-| **Recuerdos** | Polaroids por mes. Un recuerdo queda **100 % sellado** con el puntaje de los dos, una foto y una nota o reseña; lo que falta se ve y se completa en un toque. |
 | **Pelis** 🎬 | Ficha técnica, Letterboxd (póster, año, dirección y **promedio de Letterboxd**) y **curaduría de pareja**: quién es más duro, coincidencia crítica, mayor acuerdo y desacuerdo, ustedes vs. Letterboxd. Importa el diario de Letterboxd. |
 | **Comida, café y salidas** ☕ | Mapa, Instagram, barrio, **barrios conquistados** y «qué pedir», que después de ir se marca **👍 Repetir / 👎 Pasar**. |
 | **Viajes** ✈️ | **Boarding pass** con ida, vuelta, días y `8/12 EN VALIJA`; itinerario por día que se lee sin señal. |
 | **DIY** 🔨 | Pasos y materiales con barra segmentada, y el recordatorio de la foto del **antes** al arrancar y del **después** al terminar. |
-| **Wrapped** | El año en historias: total, categorías, mes más intenso, pelis, curaduría, viajes, barrios, quién es más manija, el plan que los dividió y el **ritmo compartido** (total histórico, mes récord, mejor racha). Sin rachas que se pierden. |
+| **Wrapped** | No está en ningún menú: llega solo el **30/6** (mitad de año) y el **31/12** (año entero), se abre la primera vez y queda abierto 21 días con su ticket en Sumar. El período en historias: total, categorías, mes más intenso, lo que se movieron (ideas, votos, agendados, pasos, fotos, su día de la semana), pelis, curaduría, viajes, barrios, matches totales, collage de fotos, quién es más manija, el plan que los dividió y el **ritmo compartido**. |
 | **Más** | Categorías, Letterboxd, avisos push y el **Archivo** de versiones. Nada más. |
 
 Todo es **en tiempo real**: lo que carga uno le aparece al otro al instante.

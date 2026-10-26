@@ -17,7 +17,7 @@ export function Planes({ ruta }: { ruta: Ruta }) {
   const votos = useStore((s) => s.votos)
   const categorias = useStore((s) => s.categorias)
   const yo = useYo()
-  // «todos» son los que siguen pendientes; los hechos viven en su pestaña y en Recuerdos
+  // «todos» son los que siguen pendientes; los hechos viven en su pestaña
   const [estado, setEstado] = useState<Estado | "todos">((ruta.query.get("estado") as Estado) || "todos")
   const [soloPorVotar, setSoloPorVotar] = useState(ruta.query.has("votar"))
   const [cat, setCat] = useState<string | null>(ruta.query.get("cat"))

@@ -76,7 +76,13 @@ se carga con `require(`${__hooks}/util.js`)` adentro de cada handler.
 - `web/src/componentes/Deco.tsx`: las piezas del sistema (Bloque, Segmentos,
   EtiquetaSimetria, Sello, EnVivo). `Controles.tsx`: BarraGanas y
   GanasDeLosDos (voto a ciegas + destape + match).
-- `web/src/pantallas/`: Sumar, Planes, PlanDetalle, NuevoPlan, Recuerdos, Wrapped, Más.
+- `web/src/pantallas/`: Sumar, Planes, PlanDetalle, NuevoPlan, Wrapped, Más.
+  No hay pantalla de Recuerdos: el **Wrapped** no está en ningún menú. El
+  servidor lo arma solo el 30/6 y el 31/12 (cron en `pb_hooks/wrap.js`),
+  congela el período en `wraps` y lo deja abierto 21 días; la primera vez se
+  abre solo y en Sumar aparece su ticket (`web/src/wrap.ts`). Se cuenta a
+  partir del diario `actividad` (`pb_hooks/actividad.js`), que la app no
+  puede leer: si sumás algo que merezca estar en el Wrapped, anotalo ahí.
   La app arranca en **Sumar** (nueva aventura: elegís la categoría y se abre
   NuevoPlan con eso). En **Planes** se ven todos los pendientes y se votan
   de un toque (`VotoRapido`, sigue siendo a ciegas); ahí vive la máquina

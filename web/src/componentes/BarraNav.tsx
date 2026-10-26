@@ -8,13 +8,6 @@ const ICONOS: Record<string, React.ReactNode> = {
     </>
   ),
   planes: <path d="M4 6h16M4 12h11M4 18h7" />,
-  recuerdos: (
-    <>
-      <rect x="4" y="4" width="16" height="16" rx="3" />
-      <path d="M4 16l5-5 4 4 2-2 5 5" />
-      <circle cx="15.5" cy="8.5" r="1.5" />
-    </>
-  ),
   mas: (
     <>
       <circle cx="12" cy="12" r="3" />
@@ -26,7 +19,6 @@ const ICONOS: Record<string, React.ReactNode> = {
 const TABS = [
   { id: "", nombre: "Sumar" },
   { id: "planes", nombre: "Planes" },
-  { id: "recuerdos", nombre: "Recuerdos" },
   { id: "mas", nombre: "Más" },
 ]
 

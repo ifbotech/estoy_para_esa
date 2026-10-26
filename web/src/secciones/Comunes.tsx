@@ -147,7 +147,7 @@ export function Fotos({ plan }: { plan: Plan }) {
           ))}
         </div>
       ) : (
-        <p className="suave">Cuando lo hagan, suban fotos: quedan en Recuerdos y en el Wrapped.</p>
+        <p className="suave">Cuando lo hagan, suban fotos: van al Wrapped.</p>
       )}
       <AnimatePresence>
         {abierta && (
