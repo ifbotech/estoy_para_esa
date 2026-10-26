@@ -19,42 +19,27 @@ addPlugins([
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-// Cada versión nueva toma el control apenas se instala (la app se recarga
-// sola): así un teléfono con una copia rota se arregla en la próxima visita.
+// Cada versión nueva toma el control apenas se instala.
 self.skipWaiting()
 clientsClaim()
 
-self.addEventListener("push", (e) => {
-  let d: { title?: string; body?: string; url?: string; tag?: string } = {}
-  try {
-    d = e.data?.json() ?? {}
-  } catch {
-    d = { body: e.data?.text() }
-  }
-  e.waitUntil(
-    self.registration.showNotification(d.title || "Estoy para esa", {
-      body: d.body || "",
-      icon: "iconos/icono-192.png",
-      badge: "iconos/insignia-96.png",
-      tag: d.tag,
-      data: { url: d.url || "#/" },
-    }),
-  )
+// Y si viene a reemplazar a otra, recarga las pantallas abiertas. Hace falta
+// para los teléfonos con la copia rota: ahí lo que se ve no es la app (es la
+// home de ifbotech.com guardada), así que la app no puede recargarse sola;
+// el service worker nuevo sí.
+let reemplazaAOtra = false
+self.addEventListener("install", () => {
+  reemplazaAOtra = Boolean(self.registration.active)
 })
-
-self.addEventListener("notificationclick", (e) => {
-  e.notification.close()
-  const destino = new URL(`./${e.notification.data?.url || "#/"}`, self.registration.scope).href
-  e.waitUntil(
-    (async () => {
-      const ventanas = await self.clients.matchAll({ type: "window", includeUncontrolled: true })
-      for (const v of ventanas) {
-        if (v.url.startsWith(self.registration.scope) && !v.url.includes("/archivo/")) {
-          await v.focus()
-          return (v as WindowClient).navigate(destino)
-        }
-      }
-      return self.clients.openWindow(destino)
-    })(),
-  )
+self.addEventListener("activate", (e) => {
+  if (!reemplazaAOtra) return
+  const reclamo = self.clients.claim()
+  e.waitUntil(reclamo)
+  // Afuera del waitUntil a propósito: la recarga pasa por este mismo service
+  // worker, que no atiende nada hasta terminar de activarse. Si la
+  // activación esperara a la recarga, se quedarían esperándose para siempre.
+  reclamo.then(async () => {
+    const ventanas = await self.clients.matchAll({ type: "window" })
+    for (const v of ventanas) v.navigate(v.url).catch(() => null)
+  })
 })

@@ -12,15 +12,8 @@ aplicarTokens(temaGuardado())
 
 // Las versiones del archivo no se instalan ni registran service worker: son
 // para mirar. Cuando se publica una versión nueva, el service worker nuevo
-// toma el control solo y la app se recarga una vez.
+// toma el control solo y recarga la app una vez (ver sw.ts).
 if (!enArchivo && window.top === window && "serviceWorker" in navigator) {
-  const habiaVersion = Boolean(navigator.serviceWorker.controller)
-  let recargando = false
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!habiaVersion || recargando) return
-    recargando = true
-    location.reload()
-  })
   registerSW({ immediate: true })
 }
 
