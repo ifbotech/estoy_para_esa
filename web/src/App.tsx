@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Avisos, avisar } from "./componentes/Avisos"
 import { BarraNav } from "./componentes/BarraNav"
 import { EnVivo } from "./componentes/Deco"
+import { Globos } from "./componentes/Globos"
 import { NuevoPlan } from "./pantallas/NuevoPlan"
 import { VistaRapida } from "./componentes/VistaRapida"
 import { Login } from "./pantallas/Login"
@@ -64,7 +65,7 @@ export function App() {
     return (
       <>
         <div className="cargando" role="status">
-          <span className="cargando-marca">ESTOY PARA ESA ✦</span>
+          <span className="cargando-marca">ESTOY PARA ESA <Globos tam={30} /></span>
           <span className="cargando-barra" aria-hidden>
             <i />
           </span>
@@ -140,7 +141,7 @@ function BarraSuperior({ seccion, sub }: { seccion: string; sub?: string }) {
         </button>
       ) : (
         <a className="barra-marca" href="#/">
-          ESTOY PARA ESA <b>✦</b>
+          ESTOY PARA ESA <Globos />
         </a>
       )}
       <div className="barra-der">

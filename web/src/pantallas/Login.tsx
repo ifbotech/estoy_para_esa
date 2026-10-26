@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
 import { Arte } from "../componentes/Arte"
 import { Boton } from "../componentes/Controles"
+import { Globos } from "../componentes/Globos"
 import { pb } from "../pb"
 
 const PERSONAS = [
@@ -36,7 +37,7 @@ export function Login({ onEntrar }: { onEntrar: () => void }) {
     <main className="login">
       <div className="login-ficha">
         <header className="login-cabeza">
-          <span className="login-marca">ESTOY PARA ESA ✦</span>
+          <span className="login-marca">ESTOY PARA ESA <Globos /></span>
           <span className="etiqueta num">v3</span>
         </header>
         <div className="login-arte" aria-hidden>
