@@ -3,31 +3,31 @@ import { useEffect, useState } from "react"
 import { avisar } from "../../componentes/Avisos"
 import { Boton } from "../../componentes/Controles"
 import { getEstado, guardarTema, useStore } from "../../store"
-import { aplicarTokens, FUENTES, PRESETS, TEMA_INICIAL } from "../../temas"
+import { aplicarTokens, esTemaV2, FUENTES, PRESETS, TEMA_INICIAL } from "../../temas"
 import type { FuenteKey, Tokens } from "../../tipos"
 import { festejar } from "../../util/efectos"
 
 const COLORES: { k: keyof Tokens; nombre: string }[] = [
-  { k: "bg", nombre: "Fondo" },
-  { k: "bg2", nombre: "Brillo del fondo" },
-  { k: "superficie", nombre: "Tarjetas" },
-  { k: "tinta", nombre: "Texto" },
+  { k: "bg", nombre: "Papel" },
+  { k: "bg2", nombre: "Portada" },
+  { k: "superficie", nombre: "Fichas" },
+  { k: "tinta", nombre: "Tinta" },
   { k: "suave", nombre: "Texto suave" },
-  { k: "a1", nombre: "Acento 1" },
-  { k: "a2", nombre: "Acento 2" },
-  { k: "a3", nombre: "Acento 3" },
-  { k: "a4", nombre: "Acento 4" },
+  { k: "a1", nombre: "Acción" },
+  { k: "a2", nombre: "Hecho" },
+  { k: "a3", nombre: "Cálido" },
+  { k: "a4", nombre: "Frío" },
 ]
 
 /** El tema se prueba en vivo; al guardar queda como una versión nueva. */
 export function EditorTema() {
   const temas = useStore((s) => s.temas)
   const activo = temas.find((t) => t.activo)
-  const base = activo?.tokens ?? TEMA_INICIAL.tokens
+  const base = esTemaV2(activo?.tokens) ? activo!.tokens : TEMA_INICIAL.tokens
   const [t, setT] = useState<Tokens>(base)
   const [nombre, setNombre] = useState("")
   const [nota, setNota] = useState("")
-  const cambiado = JSON.stringify(t) !== JSON.stringify(base)
+  const cambiado = JSON.stringify({ ...t, v: 2 }) !== JSON.stringify({ ...base, v: 2 })
 
   useEffect(() => aplicarTokens(t), [t])
   // Si se va sin guardar, vuelve el tema activo.
@@ -37,7 +37,7 @@ export function EditorTema() {
 
   const guardar = async (e: React.MouseEvent) => {
     const n = nombre.trim() || `Versión ${(temas[0]?.version ?? 0) + 1}`
-    const rec = await guardarTema(n, t, nota.trim())
+    const rec = await guardarTema(n, { ...t, v: 2 }, nota.trim())
     if (rec) {
       festejar(e.clientX / innerWidth, e.clientY / innerHeight)
       avisar(`Tema «${n}» guardado como v${rec.version} 🎨`)

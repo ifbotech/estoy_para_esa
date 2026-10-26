@@ -1,21 +1,22 @@
 import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
-import { ArteFlotante } from "../componentes/Arte"
 import { Boton } from "../componentes/Controles"
-import { Garabato, Marquesina, TituloCinetico } from "../componentes/Deco"
+import { Marquesina, TituloCinetico } from "../componentes/Deco"
 import { pb } from "../pb"
 import { festejar } from "../util/efectos"
 
 const PERSONAS = [
-  { slug: "inaki", nombre: "Iñaki", color: "var(--a1)" },
-  { slug: "rocio", nombre: "Rocío", color: "var(--a2)" },
+  { slug: "inaki", nombre: "Iñaki", color: "var(--tomate)" },
+  { slug: "rocio", nombre: "Rocío", color: "var(--limon)" },
 ]
 
+/** La entrada: la pregunta gigante con la entrada asomándose, como la puerta de Flying Papers. */
 export function Login({ onEntrar }: { onEntrar: () => void }) {
   const [quien, setQuien] = useState<string | null>(null)
   const [clave, setClave] = useState("")
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
+  const persona = PERSONAS.find((p) => p.slug === quien)
 
   const entrar = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,30 +25,23 @@ export function Login({ onEntrar }: { onEntrar: () => void }) {
     setError("")
     try {
       await pb.collection("users").authWithPassword(quien, clave)
-      festejar(0.5, 0.5, 1.4)
-      setTimeout(onEntrar, 500)
-    } catch {
-      setError("Esa no es 🙈 Probá de nuevo.")
+      festejar(0.5, 0.55, 1.4)
+      setTimeout(onEntrar, 450)
+    } catch (err) {
+      const status = (err as { status?: number })?.status
+      setError(status === 429 ? "Demasiados intentos. Esperá unos minutos 🙈" : "Esa no es 🙈 Probá de nuevo.")
       setCargando(false)
     }
   }
 
   return (
     <main className="login">
-      <ArteFlotante tipo="cine" tam={12} style={{ left: "6%", top: "9%" }} demora={0.3} />
-      <ArteFlotante tipo="cafe" tam={11} style={{ right: "4%", top: "14%" }} demora={0.5} />
-      <ArteFlotante tipo="viaje" tam={11} style={{ left: "10%", bottom: "16%" }} demora={0.7} />
-      <ArteFlotante tipo="salida" tam={10} style={{ right: "8%", bottom: "10%" }} demora={0.9} />
-
       <div className="login-centro">
-        <TituloCinetico texto="Estoy para esa" className="login-titulo" />
-        <Garabato />
-        <p className="login-sub">Todos nuestros plancitos, en un solo lugar.</p>
-
+        <span className="etiqueta login-marca">estoy para esa</span>
         <AnimatePresence mode="wait">
-          {!quien ? (
-            <motion.div key="quien" className="login-personas" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <p className="etiqueta">¿Quién sos?</p>
+          {!persona ? (
+            <motion.div key="quien" className="login-paso" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -16 }}>
+              <TituloCinetico lineas={["¿Quién", "sos?"]} asoma="entrada" className="login-titulo" />
               <div className="login-botones">
                 {PERSONAS.map((p, i) => (
                   <motion.button
@@ -55,23 +49,20 @@ export function Login({ onEntrar }: { onEntrar: () => void }) {
                     className="persona"
                     style={{ "--c": p.color } as React.CSSProperties}
                     onClick={() => setQuien(p.slug)}
-                    initial={{ scale: 0, rotate: i ? 20 : -20 }}
-                    animate={{ scale: 1, rotate: i ? 3 : -3 }}
-                    whileTap={{ scale: 0.9 }}
-                    whileHover={{ rotate: 0, scale: 1.05 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 14, delay: 0.6 + i * 0.12 }}
+                    initial={{ y: 30, opacity: 0, rotate: i ? 6 : -6 }}
+                    animate={{ y: 0, opacity: 1, rotate: i ? 2 : -2 }}
+                    whileTap={{ x: 4, y: 4, boxShadow: "0 0 0 var(--negro)" }}
+                    transition={{ type: "spring", stiffness: 300, damping: 18, delay: 0.5 + i * 0.1 }}
                   >
-                    <span className="persona-blob">{p.nombre[0]}</span>
-                    <span className="persona-nombre">{p.nombre}</span>
+                    <span className="persona-inicial">{p.nombre[0]}</span>
+                    <span>{p.nombre}</span>
                   </motion.button>
                 ))}
               </div>
             </motion.div>
           ) : (
-            <motion.form key="clave" className="login-form" onSubmit={entrar} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <p className="etiqueta">
-                Hola, {PERSONAS.find((p) => p.slug === quien)?.nombre} 👋
-              </p>
+            <motion.form key="clave" className="login-paso" onSubmit={entrar} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <TituloCinetico lineas={["Hola,", persona.nombre]} className="login-titulo chico" />
               <input
                 className="campo campo-grande"
                 type="password"
@@ -90,16 +81,15 @@ export function Login({ onEntrar }: { onEntrar: () => void }) {
                 {cargando ? "Entrando…" : "¡Entrar!"}
               </Boton>
               <button type="button" className="link-sutil" onClick={() => setQuien(null)}>
-                No soy yo
+                No soy {persona.nombre}
               </button>
             </motion.form>
           )}
         </AnimatePresence>
       </div>
-
       <div className="login-cintas">
-        <Marquesina items={["PELIS", "CAFECITOS", "VIAJES", "DIY", "COMIDA", "SALIDAS"]} />
-        <Marquesina items={["ESTOY PARA ESA", "¿Y SI VAMOS?", "DALE", "DE UNA"]} invertida giro={2} />
+        <Marquesina items={["PELIS", "CAFECITOS", "VIAJES", "DIY", "COMIDA", "SALIDAS"]} color="var(--limon)" />
+        <Marquesina items={["ESTOY PARA ESA", "¿Y SI VAMOS?", "DALE", "DE UNA"]} invertida giro={2} color="var(--chicle)" />
       </div>
     </main>
   )

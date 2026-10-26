@@ -84,9 +84,11 @@ export interface Item extends Base {
   dia: number
 }
 
-export type FuenteKey = "bricolage" | "unbounded" | "fraunces" | "dmsans" | "spacemono" | "instrument"
+export type FuenteKey = "bricolage" | "lilita" | "fraunces" | "dmsans" | "spacemono"
 
 export interface Tokens {
+  /** 2 = tema de la v2 («Papel Pop»). Los de la v1 no lo tienen. */
+  v?: number
   modo: "oscuro" | "claro"
   bg: string
   bg2: string

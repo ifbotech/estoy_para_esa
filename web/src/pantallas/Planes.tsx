@@ -35,21 +35,31 @@ export function Planes({ ruta }: { ruta: Ruta }) {
 
   return (
     <div className="planes">
-      <header className="planes-cabeza">
-        <TituloCinetico texto={catActual ? `${catActual.emoji} ${catActual.nombre}` : "Planes"} />
-        <p className="suave">Ordenados por ganas: arriba lo que más ganas les da a los dos.</p>
-      </header>
+      <section className="capitulo planes-cabeza" style={{ "--cap": catActual?.color ?? "var(--lavanda)" } as React.CSSProperties}>
+        <TituloCinetico
+          key={cat ?? "todas"}
+          lineas={catActual ? [catActual.nombre] : ["Todos", "los planes"]}
+          asoma={catActual ? catActual.personalidad : "entrada"}
+          className="planes-titulo"
+        />
+        {catActual && (
+          <span className="planes-arte">
+            <Arte tipo={catActual.personalidad} tam={14} mira={-1} />
+          </span>
+        )}
+        <p>Ordenados por ganas: arriba lo que más ganas les da a los dos.</p>
+      </section>
 
       <input className="campo buscador" type="search" placeholder="Buscar un plan…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
 
       <LayoutGroup>
-        <div className="segmentos" role="tablist">
-          {ESTADOS.map((e) => (
-            <button key={e.id} role="tab" aria-selected={estado === e.id} className={`segmento ${estado === e.id ? "activo" : ""}`} onClick={() => setEstado(e.id)}>
-              {estado === e.id && <motion.span layoutId="segmento" className="segmento-fondo" transition={{ type: "spring", stiffness: 500, damping: 35 }} />}
-              <span className="segmento-emoji">{e.emoji}</span>
-              <span>{e.nombre}</span>
-              <span className="segmento-num">{cuenta(e.id)}</span>
+        <div className="filtro-estados" role="tablist" aria-label="Estado">
+          {ESTADOS.map((e, i) => (
+            <button key={e.id} role="tab" aria-selected={estado === e.id} className={`filtro-estado ${estado === e.id ? "activo" : ""}`} onClick={() => setEstado(e.id)}>
+              {estado === e.id && <motion.span layoutId="filtro-estado" className="filtro-fondo" transition={{ type: "spring", stiffness: 500, damping: 35 }} />}
+              <span className="filtro-num">{i + 1}</span>
+              <span className="filtro-nombre">{e.nombre}</span>
+              <span className="filtro-cuenta">{cuenta(e.id)}</span>
             </button>
           ))}
         </div>
@@ -66,19 +76,19 @@ export function Planes({ ruta }: { ruta: Ruta }) {
         ))}
       </div>
 
-      <LayoutGroup>
-        <div className="lista-planes">
-          <AnimatePresence mode="popLayout">
-            {lista.map((r, i) => (
-              <TarjetaPlan key={r.plan.id} r={r} puesto={estado !== "hecho" && !busqueda && r.promedio !== null ? i + 1 : undefined} />
-            ))}
-          </AnimatePresence>
-        </div>
-      </LayoutGroup>
+      {lista.length > 0 && <p className="pista-gestos etiqueta">deslizá → para avanzar · doble toque: ¡estoy para esa! · mantené para ver rápido</p>}
+
+      <div className="lista-planes">
+        <AnimatePresence mode="popLayout">
+          {lista.map((r, i) => (
+            <TarjetaPlan key={r.plan.id} r={r} puesto={estado !== "hecho" && !busqueda && r.promedio !== null ? i + 1 : undefined} />
+          ))}
+        </AnimatePresence>
+      </div>
 
       {!lista.length && (
-        <motion.div className="vacio" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-          <Arte tipo={catActual?.personalidad ?? "salida"} tam={13} />
+        <motion.div className="vacio" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
+          <Arte tipo={catActual?.personalidad ?? "salida"} tam={14} />
           {busqueda ? "Nada con ese nombre." : estado === "hecho" ? "Todavía nada hecho acá. ¡A hacer!" : "Nada por acá todavía. Tocá el + para sumar uno."}
         </motion.div>
       )}

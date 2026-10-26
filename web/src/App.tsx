@@ -4,6 +4,7 @@ import { Avisos, avisar } from "./componentes/Avisos"
 import { BarraNav } from "./componentes/BarraNav"
 import { Fondo, TituloCinetico } from "./componentes/Deco"
 import { NuevoPlan } from "./pantallas/NuevoPlan"
+import { VistaRapida } from "./componentes/VistaRapida"
 import { Hoy } from "./pantallas/Hoy"
 import { Login } from "./pantallas/Login"
 import { Mas } from "./pantallas/Mas"
@@ -14,6 +15,8 @@ import { Wrapped } from "./pantallas/Wrapped"
 import { enArchivo, pb } from "./pb"
 import { useRuta } from "./router"
 import { iniciar, useStore } from "./store"
+import { racha } from "./calculos"
+import { volver } from "./router"
 import { aplicarTokens } from "./temas"
 
 export function App() {
@@ -58,7 +61,7 @@ export function App() {
       <>
         <Fondo />
         <div className="cargando">
-          <TituloCinetico texto="Cargando plancitos…" />
+          <TituloCinetico lineas={["Cargando", "plancitos"]} asoma="entrada" />
         </div>
         <Avisos />
       </>
@@ -96,21 +99,50 @@ export function App() {
           📼 Versión archivada · <a href="../../">ir a la actual</a>
         </div>
       )}
+      {!pantallaCompleta && <BarraSuperior seccion={seccion} sub={ruta.partes[1]} />}
       <AnimatePresence mode="wait">
         <motion.main
           key={ruta.partes.slice(0, 2).join("/")}
           className={`pantalla ${pantallaCompleta ? "completa" : ""}`}
-          initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
-          transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.25, ease: [0.25, 1, 0.5, 1] }}
         >
           {pantalla}
         </motion.main>
       </AnimatePresence>
       {!pantallaCompleta && <BarraNav actual={tab} onNuevo={() => setNuevo(true)} />}
       <NuevoPlan abierta={nuevo} onCerrar={() => setNuevo(false)} categoriaInicial={ruta.query.get("cat") ?? undefined} />
+      <VistaRapida />
       <Avisos />
     </>
+  )
+}
+
+const NOMBRES: Record<string, string> = { planes: "Planes", recuerdos: "Recuerdos", mas: "Más", plan: "Plan" }
+
+/** La barra de arriba, enmarcada: la marca y la racha, o volver en las internas. */
+function BarraSuperior({ seccion, sub }: { seccion: string; sub?: string }) {
+  const planes = useStore((s) => s.planes)
+  const interna = seccion === "plan" || (seccion === "mas" && sub)
+  return (
+    <header className="barra">
+      {interna ? (
+        <button className="barra-volver" onClick={() => volver(seccion === "plan" ? "/planes" : "/mas")} aria-label="Volver">
+          ←
+        </button>
+      ) : (
+        <a className="barra-marca" href="#/">
+          estoy para <b>esa</b>
+        </a>
+      )}
+      <div className="barra-der">
+        {interna && <span className="barra-chip">{NOMBRES[seccion] ?? ""}</span>}
+        <span className="barra-chip" title="Semanas seguidas haciendo algo">
+          🔥 {racha(planes)} sem
+        </span>
+      </div>
+    </header>
   )
 }

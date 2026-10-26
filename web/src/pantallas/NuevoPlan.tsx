@@ -1,82 +1,105 @@
 import { AnimatePresence, motion } from "motion/react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Arte } from "../componentes/Arte"
 import { BarraGanas, Boton, Hoja } from "../componentes/Controles"
 import { colorDe } from "../componentes/Tarjetas"
 import { tipoDeLink, usuarioInstagram } from "../personalidades"
 import { ir } from "../router"
 import { crearPlan, useStore, useYo, votar } from "../store"
-import type { Datos, Personalidad } from "../tipos"
+import type { Datos } from "../tipos"
 import { festejar } from "../util/efectos"
+import { interpretar } from "../util/interpretar"
 import { limpiarTitulo, separarAnio, traerPreview } from "../util/preview"
+import { sonar } from "../util/sonidos"
 
+const EJEMPLOS = [
+  "ver Perfect Days el sábado",
+  "pizza en Güerrín mañana",
+  "escapada a Colonia el 5 de diciembre",
+  "restaurar la mesita de luz",
+  "brunch en Birkin este finde",
+]
+
+/**
+ * Nuevo plan en charla: escribís como hablás y la app detecta la categoría,
+ * el día y el link. Todo se corrige con un toque antes de agregar.
+ */
 export function NuevoPlan({ abierta, onCerrar, categoriaInicial }: { abierta: boolean; onCerrar: () => void; categoriaInicial?: string }) {
   const categorias = useStore((s) => s.categorias)
   const usuarios = useStore((s) => s.usuarios)
   const yo = useYo()
-  const [cat, setCat] = useState<string | null>(null)
+  const [texto, setTexto] = useState("")
   const [titulo, setTitulo] = useState("")
-  const [link, setLink] = useState("")
+  const [tituloTocado, setTituloTocado] = useState(false)
+  const [catElegida, setCatElegida] = useState<string | null>(null)
+  const [sinFecha, setSinFecha] = useState(false)
   const [datos, setDatos] = useState<Datos>({})
   const [ganas, setGanas] = useState(70)
   const [buscando, setBuscando] = useState(false)
   const [guardando, setGuardando] = useState(false)
+  const leido = useRef("")
+  const ejemplo = useMemo(() => EJEMPLOS[Math.floor(Math.random() * EJEMPLOS.length)], [abierta])
 
   useEffect(() => {
-    if (abierta) {
-      setCat(categoriaInicial && categorias.some((c) => c.id === categoriaInicial) ? categoriaInicial : null)
-      setTitulo("")
-      setLink("")
-      setDatos({})
-      setGanas(70)
-    }
+    if (!abierta) return
+    setTexto("")
+    setTitulo("")
+    setTituloTocado(false)
+    setCatElegida(categoriaInicial && categorias.some((c) => c.id === categoriaInicial) ? categoriaInicial : null)
+    setSinFecha(false)
+    setDatos({})
+    setGanas(70)
+    leido.current = ""
   }, [abierta, categoriaInicial, categorias])
 
-  const porPersonalidad = (p: Personalidad) => categorias.find((c) => c.personalidad === p)?.id
+  const p = useMemo(() => interpretar(texto), [texto])
+  const catDetectada = p.personalidad ? categorias.find((c) => c.personalidad === p.personalidad)?.id ?? null : null
+  const cat = categorias.find((c) => c.id === (catElegida ?? catDetectada))
+  const cuando = sinFecha ? null : p.cuando
+  const tituloFinal = (tituloTocado ? titulo : p.titulo).trim()
 
-  // Pegar un link completa lo que se pueda: Letterboxd → peli con póster,
-  // Maps → lugar, Instagram → el @.
-  const procesado = useRef("")
-  const alPegarLink = async (url: string) => {
-    url = url.trim()
-    setLink(url)
-    if (procesado.current === url) return
-    procesado.current = url
+  // Un link nuevo trae su vista previa (póster de Letterboxd, foto del lugar).
+  useEffect(() => {
+    const url = p.link
+    if (!url || url === leido.current) return
+    leido.current = url
     const tipo = tipoDeLink(url)
-    if (!tipo) return
     if (tipo === "instagram") {
       setDatos((d) => ({ ...d, instagram: usuarioInstagram(url) }))
-      if (!titulo) setTitulo("@" + usuarioInstagram(url))
       return
     }
-    if (tipo === "letterboxd" && !cat) setCat(porPersonalidad("cine") ?? null)
     if (tipo === "maps") setDatos((d) => ({ ...d, maps: url }))
-    setBuscando(true)
-    const p = await traerPreview(url)
-    setBuscando(false)
-    if (!p) return
-    if (tipo === "letterboxd") {
-      const { titulo: t, anio } = separarAnio(limpiarTitulo(p.titulo))
-      setTitulo((v) => v || t)
-      setDatos((d) => ({ ...d, letterboxd: url, poster: p.imagen, anio, director: p.extraEtiqueta?.toLowerCase().includes("direct") ? p.extra : d.director }))
-    } else {
-      setTitulo((v) => v || limpiarTitulo(p.titulo))
-      if (p.imagen) setDatos((d) => ({ ...d, imagen: p.imagen }))
-    }
-  }
+    const t = setTimeout(async () => {
+      setBuscando(true)
+      const prev = await traerPreview(url)
+      setBuscando(false)
+      if (!prev) return
+      if (tipo === "letterboxd") {
+        const { titulo: tt, anio } = separarAnio(limpiarTitulo(prev.titulo))
+        if (!tituloTocado && tt) {
+          setTitulo(tt)
+          setTituloTocado(true)
+        }
+        setDatos((d) => ({ ...d, letterboxd: url, poster: prev.imagen, anio, director: prev.extraEtiqueta?.toLowerCase().includes("direct") ? prev.extra : d.director }))
+      } else if (prev.imagen) setDatos((d) => ({ ...d, imagen: prev.imagen }))
+    }, 500)
+    return () => clearTimeout(t)
+  }, [p.link, tituloTocado])
 
   const guardar = async (e: React.MouseEvent) => {
-    if (!cat || !titulo.trim()) return
+    if (!cat || !tituloFinal) return
     setGuardando(true)
     const plan = await crearPlan({
-      titulo: titulo.trim(),
-      categoria: cat,
-      estado: "idea",
-      link: tipoDeLink(link) ? link.trim() : "",
+      titulo: tituloFinal,
+      categoria: cat.id,
+      estado: cuando ? "agendado" : "idea",
+      cuando: cuando ? new Date(`${cuando.fecha}T21:00`).toISOString() : "",
+      link: p.link && tipoDeLink(p.link) !== "letterboxd" ? p.link : "",
       datos,
     })
     if (plan) {
       await votar(plan.id, { ganas })
+      sonar("esa")
       festejar(e.clientX / innerWidth, e.clientY / innerHeight, 1.3)
       onCerrar()
       ir(`/plan/${plan.id}`)
@@ -84,71 +107,82 @@ export function NuevoPlan({ abierta, onCerrar, categoriaInicial }: { abierta: bo
     setGuardando(false)
   }
 
-  const categoria = categorias.find((c) => c.id === cat)
-  const yoIndice = usuarios.findIndex((u) => u.id === yo?.id)
+  const yoI = Math.max(0, usuarios.findIndex((u) => u.id === yo?.id))
 
   return (
-    <Hoja abierta={abierta} onCerrar={onCerrar} titulo="¿Qué se les ocurrió?">
-      <AnimatePresence mode="wait">
-        {!cat ? (
-          <motion.div key="cats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }}>
-            <p className="etiqueta" style={{ marginBottom: 12 }}>
-              Elegí una categoría
-            </p>
-            <div className="grid2">
-              {categorias.map((c, i) => (
-                <motion.button
-                  key={c.id}
-                  className={`mosaico mosaico-chico p-${c.personalidad}`}
-                  onClick={() => setCat(c.id)}
-                  initial={{ opacity: 0, scale: 0.6, rotate: i % 2 ? 8 : -8 }}
-                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                  whileTap={{ scale: 0.92 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 16, delay: i * 0.04 }}
-                >
-                  <Arte tipo={c.personalidad} tam={8} />
-                  <h3>
-                    {c.emoji} {c.nombre}
-                  </h3>
-                </motion.button>
-              ))}
-            </div>
-            <label className="campo-etiqueta" style={{ marginTop: 18 }}>
-              <span>…o pegá un link (Letterboxd, Maps, Instagram)</span>
-              <input className="campo" inputMode="url" placeholder="https://…" value={link} onChange={(e) => setLink(e.target.value)} onBlur={(e) => alPegarLink(e.target.value)} onPaste={(e) => alPegarLink(e.clipboardData.getData("text"))} />
-            </label>
-          </motion.div>
-        ) : (
-          <motion.div key="form" className="nuevo-form" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
-            <button className={`nuevo-cat p-${categoria?.personalidad}`} onClick={() => setCat(null)}>
-              <Arte tipo={categoria?.personalidad ?? "salida"} tam={5} />
-              <span>
-                {categoria?.emoji} {categoria?.nombre}
-              </span>
-              <small>cambiar</small>
+    <Hoja abierta={abierta} onCerrar={onCerrar} titulo="Contame el plan">
+      <div className="nuevo">
+        <textarea
+          className="campo charla"
+          rows={2}
+          placeholder={`Como te salga. Ej: ${ejemplo}`}
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          autoFocus
+          enterKeyHint="done"
+        />
+
+        <div className="detecta" aria-live="polite">
+          <AnimatePresence>
+            {cat && (
+              <motion.span key="cat" className="detecta-chip si" style={{ "--cc": cat.color } as React.CSSProperties} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                {cat.emoji} {cat.nombre}
+              </motion.span>
+            )}
+            {cuando && (
+              <motion.button key="cuando" className="detecta-chip si" onClick={() => setSinFecha(true)} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} aria-label="Quitar el día">
+                📅 {cuando.etiqueta} ×
+              </motion.button>
+            )}
+            {p.link && (
+              <motion.span key="link" className="detecta-chip si" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                🔗 {tipoDeLink(p.link) === "letterboxd" ? "Letterboxd" : tipoDeLink(p.link) === "maps" ? "Maps" : tipoDeLink(p.link) === "instagram" ? "Instagram" : "link"}
+                {buscando && " …"}
+              </motion.span>
+            )}
+          </AnimatePresence>
+          {!cat && texto.length > 2 && <span className="detecta-chip">¿qué categoría? elegila abajo</span>}
+        </div>
+
+        <div className="fila-scroll nuevo-cats">
+          {categorias.map((c) => (
+            <button
+              key={c.id}
+              className={`nuevo-cat ${cat?.id === c.id ? "elegida" : ""}`}
+              style={{ "--cc": c.color } as React.CSSProperties}
+              onClick={() => setCatElegida(c.id)}
+              aria-pressed={cat?.id === c.id}
+            >
+              <Arte tipo={c.personalidad} tam={7} />
+              <span>{c.nombre}</span>
             </button>
+          ))}
+        </div>
+
+        {(texto || titulo) && (
+          <label className="campo-etiqueta">
+            <span>Se va a llamar</span>
             <input
               className="campo campo-grande"
-              placeholder={categoria?.personalidad === "cine" ? "Perfect Days" : categoria?.personalidad === "viaje" ? "Bariloche en invierno" : "¿Qué plan?"}
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              autoFocus
-              enterKeyHint="done"
+              value={tituloTocado ? titulo : p.titulo}
+              onChange={(e) => {
+                setTitulo(e.target.value)
+                setTituloTocado(true)
+              }}
             />
-            <label className="campo-etiqueta">
-              <span>Link (opcional) {buscando && "· buscando…"}</span>
-              <input className="campo" inputMode="url" placeholder="Letterboxd, Google Maps, Instagram, lo que sea" value={link} onChange={(e) => setLink(e.target.value)} onBlur={(e) => alPegarLink(e.target.value)} onPaste={(e) => alPegarLink(e.clipboardData.getData("text"))} />
-            </label>
-            {(datos.poster || datos.imagen) && (
-              <motion.img className="nuevo-preview" src={datos.poster || datos.imagen} alt="" initial={{ scale: 0.8, rotate: -6, opacity: 0 }} animate={{ scale: 1, rotate: -2, opacity: 1 }} />
-            )}
-            <BarraGanas valor={ganas} nombre={`Tus ganas`} color={colorDe(yo ?? undefined, Math.max(0, yoIndice))} editable onCambio={setGanas} />
-            <Boton className="boton-grande" onClick={guardar} disabled={!titulo.trim() || guardando}>
-              {guardando ? "Guardando…" : "¡Agregar!"}
-            </Boton>
-          </motion.div>
+          </label>
         )}
-      </AnimatePresence>
+
+        {(datos.poster || datos.imagen) && (
+          <motion.img className="nuevo-preview" src={datos.poster || datos.imagen} alt="" initial={{ scale: 0.8, rotate: -8, opacity: 0 }} animate={{ scale: 1, rotate: -3, opacity: 1 }} />
+        )}
+
+        <BarraGanas valor={ganas} nombre="Tus ganas" inicial={yo?.name?.slice(0, 1)} color={colorDe(yo ?? undefined, yoI)} editable onCambio={setGanas} />
+
+        <Boton className="boton-grande" onClick={guardar} disabled={!tituloFinal || !cat || guardando}>
+          {guardando ? "Guardando…" : cuando ? `¡Agendar para ${cuando.etiqueta}!` : "¡Agregar!"}
+        </Boton>
+      </div>
     </Hoja>
   )
 }

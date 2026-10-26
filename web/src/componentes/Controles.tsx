@@ -1,6 +1,10 @@
 import { AnimatePresence, motion, useDragControls } from "motion/react"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { vibrar } from "../util/efectos"
+import { sonar } from "../util/sonidos"
+import { Estallido } from "./Deco"
+import type { Estado } from "../tipos"
+import { ESTADOS } from "../tipos"
 
 // --- la barra de ganas -----------------------------------------------------
 
@@ -33,6 +37,7 @@ export function BarraGanas({
   editable,
   onCambio,
   pendiente = false,
+  inicial,
 }: {
   valor: number
   nombre: string
@@ -40,6 +45,7 @@ export function BarraGanas({
   editable: boolean
   onCambio?: (v: number) => void
   pendiente?: boolean
+  inicial?: string
 }) {
   const [local, setLocal] = useState(valor)
   const arrastrando = useRef(false)
@@ -55,13 +61,19 @@ export function BarraGanas({
     return Math.round(Math.min(100, Math.max(0, ((x - r.left) / r.width) * 100)))
   }
   const mover = (v: number) => {
-    if (Math.floor(v / 10) !== Math.floor(ultimo.current / 10)) vibrar(6)
+    if (Math.floor(v / 10) !== Math.floor(ultimo.current / 10)) {
+      vibrar(6)
+      sonar("tic")
+    }
     ultimo.current = v
     setLocal(v)
   }
   const soltar = (v: number) => {
     arrastrando.current = false
-    if (v >= 92 && valor < 92) vibrar([20, 40, 20])
+    if (v >= 92 && valor < 92) {
+      vibrar([20, 40, 20])
+      sonar("esa")
+    }
     onCambio?.(v)
   }
 
@@ -108,14 +120,27 @@ export function BarraGanas({
         <div className="ganas-relleno" style={{ width: `${pendiente ? 0 : local}%` }} />
         {!pendiente && (
           <motion.div
-            className="ganas-cara"
+            className="ganas-perilla"
             style={{ left: `${local}%` }}
-            animate={{ scale: 0.8 + local / 120, rotate: local >= 92 ? [0, -12, 12, 0] : 0 }}
-            transition={local >= 92 ? { rotate: { repeat: Infinity, duration: 0.6 } } : { type: "spring", stiffness: 400, damping: 18 }}
+            animate={{ scale: 0.9 + local / 500 }}
+            transition={{ type: "spring", stiffness: 400, damping: 18 }}
           >
-            {caraDeGanas(local)}
+            {inicial ?? nombre.slice(0, 1)}
           </motion.div>
         )}
+        <AnimatePresence>
+          {!pendiente && local >= 92 && (
+            <motion.span
+              className="ganas-estallido"
+              initial={{ scale: 0, rotate: -30 }}
+              animate={{ scale: 1, rotate: -8 }}
+              exit={{ scale: 0, rotate: 20 }}
+              transition={{ type: "spring", stiffness: 420, damping: 14 }}
+            >
+              <Estallido>¡ESTOY PARA ESA!</Estallido>
+            </motion.span>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
@@ -251,18 +276,57 @@ export function Boton({
   type?: "button" | "submit"
   "aria-label"?: string
 }) {
+  // Se hunde con CSS (:active) y al soltar hace «jelly», como en Planetoño.
   return (
-    <motion.button
+    <button
       type={type}
       className={`boton boton-${variante} ${className}`}
-      whileTap={{ scale: 0.92, rotate: -1.5 }}
-      transition={{ type: "spring", stiffness: 500, damping: 20 }}
-      onClick={onClick}
+      onClick={(e) => {
+        const b = e.currentTarget
+        b.classList.remove("jelly")
+        void b.offsetWidth
+        b.classList.add("jelly")
+        sonar("pop")
+        onClick?.(e)
+      }}
       disabled={disabled}
       {...resto}
     >
       {children}
-    </motion.button>
+    </button>
+  )
+}
+
+// --- pasos: los estados del plan como el «How it works» de Planetoño -------
+
+export function Pasos({ actual, onCambio, compacto = false }: { actual: Estado; onCambio?: (e: Estado, ev: React.MouseEvent) => void; compacto?: boolean }) {
+  return (
+    <div className={`pasos ${compacto ? "compacto" : ""}`} role="radiogroup" aria-label="Estado del plan">
+      {ESTADOS.map((e, i) => {
+        const activo = e.id === actual
+        return (
+          <motion.button
+            key={e.id}
+            type="button"
+            role="radio"
+            aria-checked={activo}
+            aria-label={e.nombre}
+            layout
+            className={`paso ${activo ? "activo" : ""} ${ESTADOS.findIndex((x) => x.id === actual) > i ? "pasado" : ""}`}
+            onClick={(ev) => onCambio?.(e.id, ev)}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 500, damping: 32 }}
+          >
+            <motion.span layout="position" className="paso-num">{i + 1}</motion.span>
+            {activo && (
+              <motion.span className="paso-nombre" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08 }}>
+                {e.nombre}
+              </motion.span>
+            )}
+          </motion.button>
+        )
+      })}
+    </div>
   )
 }
 

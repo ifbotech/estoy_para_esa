@@ -1,8 +1,14 @@
 [
   {
+    "id": "v2",
+    "nombre": "Papel Pop",
+    "fecha": "2026-10-26",
+    "notas": "Papel hueso y tinta, capítulos de color plano por categoría, títulos condensados gigantes con la entrada asomándose, botones que se hunden, personajes-objeto con ojos, pasos para los estados, doble toque = ¡estoy para esa!, deslizar para avanzar, nuevo plan en charla, recuerdos en ventanas y sonidos opcionales."
+  },
+  {
     "id": "v1",
     "nombre": "Kiosco Cósmico",
     "fecha": "2026-10-25",
-    "notas": "La primera. Hoy con título que salta, dibujos de CSS que se revolean, cintas que corren, ranking por ganas, una personalidad por categoría, Recuerdos y el Wrapped."
+    "notas": "La primera. Noche violeta con neón, título que salta, dibujos de CSS que se revolean, cintas que corren, ranking por ganas, una personalidad por categoría, Recuerdos y el Wrapped."
   }
 ]

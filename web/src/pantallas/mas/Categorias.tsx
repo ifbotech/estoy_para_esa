@@ -46,7 +46,7 @@ export function Categorias() {
       <p className="suave">La personalidad define cómo se ve y qué funciones especiales trae (Letterboxd, mapa, itinerario, pasos…).</p>
       <div className="lista-cats">
         {categorias.map((c, i) => (
-          <motion.div key={c.id} layout className={`cat-fila p-${c.personalidad}`}>
+          <motion.div key={c.id} layout className="cat-fila" style={{ "--cap": c.color || "var(--a3)" } as React.CSSProperties}>
             <Arte tipo={c.personalidad} tam={5} />
             <div className="cat-fila-texto">
               <b>
@@ -96,7 +96,8 @@ export function Categorias() {
               {(Object.keys(PERSONALIDADES) as Personalidad[]).map((p) => (
                 <button
                   key={p}
-                  className={`mosaico mosaico-chico p-${p} ${editando.personalidad === p ? "elegido" : ""}`}
+                  className={`ficha nuevo-cat-ficha ${editando.personalidad === p ? "elegido" : ""}`}
+                  style={{ "--cap": editando.color || "var(--a3)" } as React.CSSProperties}
                   onClick={() => setEditando({ ...editando, personalidad: p })}
                 >
                   <Arte tipo={p} tam={7} />

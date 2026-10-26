@@ -3,16 +3,16 @@ import { useState } from "react"
 import { promedioGanas } from "../calculos"
 import { Arte } from "../componentes/Arte"
 import { avisar } from "../componentes/Avisos"
-import { BarraGanas, Boton, caraDeGanas, Estrellas, Hoja, Medidor, TextoEditable } from "../componentes/Controles"
-import { Contador } from "../componentes/Deco"
+import { BarraGanas, Boton, Estrellas, Hoja, Pasos, TextoEditable } from "../componentes/Controles"
+import { Contador, Resaltado } from "../componentes/Deco"
+import { cambiarEstado, estoyParaEsa } from "../acciones"
 import { colorDe, imagenDe } from "../componentes/Tarjetas"
 import { PERSONALIDADES } from "../personalidades"
 import { ir, volver } from "../router"
 import { ListaItems, Fotos } from "../secciones/Comunes"
 import { SeccionCine, SeccionLugar, SeccionTaller, SeccionViaje } from "../secciones/Especiales"
 import { borrarPlan, editarPlan, useStore, useYo, votar } from "../store"
-import { ESTADOS, type Estado, type Personalidad, type Plan } from "../tipos"
-import { festejar, festejoGrande, vibrar } from "../util/efectos"
+import type { Personalidad, Plan } from "../tipos"
 import { achicar, elegirArchivos } from "../util/imagen"
 
 export function PlanDetalle({ id }: { id: string }) {
@@ -43,17 +43,6 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
   const [cambiarCat, setCambiarCat] = useState(false)
   const info = PERSONALIDADES[personalidad]
 
-  const cambiarEstado = (e: React.MouseEvent, estado: Estado) => {
-    if (estado === plan.estado) return
-    vibrar(15)
-    editarPlan(plan.id, { estado })
-    if (estado === "hecho") {
-      festejoGrande()
-      festejar(e.clientX / innerWidth, e.clientY / innerHeight, 1.5)
-      avisar("¡Lo hicieron! 🎉 Ahora puntúenlo y suban fotos.")
-    }
-  }
-
   const cambiarPortada = async () => {
     const [a] = await elegirArchivos(false)
     if (!a) return
@@ -71,58 +60,34 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
 
   return (
     <div className="detalle">
-      <header className={`cabecera p-${personalidad} ${img ? "con-imagen" : ""}`}>
+      <header className={`capitulo cabecera ${img ? "con-imagen" : ""}`} style={{ "--cap": cat?.color || "var(--a3)" } as React.CSSProperties}>
         {img && (
-          <motion.div className="cabecera-img" initial={{ scale: 1.15 }} animate={{ scale: 1 }} transition={{ duration: 1.2 }}>
+          <motion.div className="cabecera-img" initial={{ scale: 1.12 }} animate={{ scale: 1 }} transition={{ duration: 1 }}>
             <img src={img} alt="" />
           </motion.div>
         )}
-        {!img && <Arte tipo={personalidad} tam={22} className="arte-cabecera" />}
+        {!img && (
+          <motion.span className="cabecera-arte" initial={{ y: 40, rotate: 12, opacity: 0 }} animate={{ y: 0, rotate: 4, opacity: 1 }} transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.15 }}>
+            <Arte tipo={personalidad} tam={22} mira={-1} />
+          </motion.span>
+        )}
         {personalidad === "viaje" && <span className="sello-pasaporte">{plan.datos?.pais || "Pasaporte"} ✈</span>}
-        {personalidad === "taller" && <span className="cinta-papel" />}
-        <button className="cabecera-volver" onClick={() => volver("/planes")} aria-label="Volver">
-          ←
-        </button>
         <div className="cabecera-acciones">
-          <button onClick={cambiarPortada} aria-label="Cambiar portada">
+          <button className="boton boton-chico" onClick={() => setCambiarCat(true)}>
+            {cat?.emoji} {cat?.nombre} ▾
+          </button>
+          <button className="boton boton-chico" onClick={cambiarPortada} aria-label="Cambiar portada">
             📷
           </button>
-          <button onClick={borrar} aria-label="Borrar plan">
+          <button className="boton boton-chico" onClick={borrar} aria-label="Borrar plan">
             🗑
           </button>
         </div>
-        <motion.button className="chip-cat chip-cabecera" style={{ "--cc": cat?.color || "var(--a1)" } as React.CSSProperties} onClick={() => setCambiarCat(true)} whileTap={{ scale: 0.9 }}>
-          {cat?.emoji} {cat?.nombre} ▾
-        </motion.button>
         <TextoEditable ajustable className="campo-titulo" valor={plan.titulo} onGuardar={(v) => v && editarPlan(plan.id, { titulo: v })} />
       </header>
 
-      <div className="estados" role="radiogroup" aria-label="Estado">
-        <div className="estados-linea">
-          <motion.div
-            className="estados-progreso"
-            animate={{ width: `${(ESTADOS.findIndex((e) => e.id === plan.estado) / (ESTADOS.length - 1)) * 100}%` }}
-            transition={{ type: "spring", stiffness: 120, damping: 18 }}
-          />
-        </div>
-        {ESTADOS.map((e, i) => {
-          const actual = ESTADOS.findIndex((x) => x.id === plan.estado)
-          return (
-            <motion.button
-              key={e.id}
-              role="radio"
-              aria-checked={plan.estado === e.id}
-              className={`estado ${i <= actual ? "pasado" : ""} ${plan.estado === e.id ? "actual" : ""}`}
-              onClick={(ev) => cambiarEstado(ev, e.id)}
-              whileTap={{ scale: 0.85 }}
-            >
-              <motion.span className="estado-punto" animate={plan.estado === e.id ? { scale: [1, 1.3, 1] } : { scale: 1 }} transition={{ duration: 0.4 }}>
-                {e.emoji}
-              </motion.span>
-              <span className="estado-nombre">{e.nombre}</span>
-            </motion.button>
-          )
-        })}
+      <div className="detalle-pasos">
+        <Pasos actual={plan.estado} onCambio={(e, ev) => cambiarEstado(plan, e, ev)} />
       </div>
 
       {plan.estado === "agendado" && (
@@ -138,19 +103,11 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
       )}
 
       <section className="seccion bloque ganas-bloque">
-        <div className="ganas-resumen">
-          <Medidor valor={prom} tam={124}>
-            <div>
-              <div className="medidor-cara">{prom === null ? "🤔" : caraDeGanas(prom)}</div>
-              <b className="medidor-num">{prom === null ? "—" : <Contador valor={Math.round(prom)} />}</b>
-            </div>
-          </Medidor>
-          <div>
-            <h2>
-              Ganas que <span className="serif">tenemos</span>
-            </h2>
-            <p className="suave">El promedio de los dos decide su lugar en la lista.</p>
-          </div>
+        <div className="seccion-cabeza ganas-resumen">
+          <h2>
+            Ganas que <Resaltado>tenemos</Resaltado>
+          </h2>
+          <span className="ganas-promedio">{prom === null ? "—" : <Contador valor={Math.round(prom)} />}</span>
         </div>
         <div className="ganas-lista">
           {usuarios.map((u, i) => {
@@ -160,6 +117,7 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
               <BarraGanas
                 key={u.id}
                 nombre={mio ? `${u.name} (vos)` : u.name}
+                inicial={u.name.slice(0, 1)}
                 color={colorDe(u, i)}
                 valor={v?.ganas ?? 50}
                 pendiente={!v && !mio}
@@ -169,6 +127,12 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
             )
           })}
         </div>
+        {plan.estado !== "hecho" && (
+          <Boton className="boton-grande" onClick={(e) => estoyParaEsa(plan.id, e)}>
+            🙌 ¡Estoy para esa!
+          </Boton>
+        )}
+        <p className="etiqueta suave">el promedio de los dos decide su lugar en la lista</p>
       </section>
 
       {plan.estado === "hecho" && <Puntajes plan={plan} />}
@@ -210,16 +174,17 @@ function Detalle({ plan, personalidad }: { plan: Plan; personalidad: Personalida
           {categorias.map((c) => (
             <button
               key={c.id}
-              className={`mosaico mosaico-chico p-${c.personalidad}`}
+              className="marco mosaico mosaico-chico"
+              style={{ "--cap": c.color } as React.CSSProperties}
               onClick={() => {
                 editarPlan(plan.id, { categoria: c.id })
                 setCambiarCat(false)
               }}
             >
-              <Arte tipo={c.personalidad} tam={8} />
-              <h3>
-                {c.emoji} {c.nombre}
-              </h3>
+              <span className="marco-dentro mosaico-dentro">
+                <Arte tipo={c.personalidad} tam={8} />
+                <span className="mosaico-nombre">{c.nombre}</span>
+              </span>
             </button>
           ))}
         </div>

@@ -4,7 +4,7 @@ import { avisar } from "../../componentes/Avisos"
 import { Boton } from "../../componentes/Controles"
 import { raizApp } from "../../pb"
 import { activarTema, useStore } from "../../store"
-import { FUENTES } from "../../temas"
+import { esTemaV2, FUENTES } from "../../temas"
 import versiones from "../../versiones.json"
 
 /**
@@ -88,7 +88,11 @@ export function Archivo() {
                   ))}
                 </span>
               </div>
-              {t.activo ? (
+              {!esTemaV2(t.tokens) ? (
+                <span className="etiqueta" style={{ color: t.tokens.suave }}>
+                  de la v1
+                </span>
+              ) : t.activo ? (
                 <span className="etiqueta" style={{ color: t.tokens.a2 }}>
                   en uso
                 </span>

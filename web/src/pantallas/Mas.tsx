@@ -9,6 +9,7 @@ import { BASE } from "../pb"
 import { volver } from "../router"
 import { editarPerfil, terminar, useStore, useYo } from "../store"
 import versiones from "../versiones.json"
+import { prenderSonidos, sonidosPrendidos } from "../util/sonidos"
 import { activarPush, desactivarPush, esIOSSinInstalar, probarPush, pushDisponible, suscripcionActual } from "../util/push"
 import { EditorTema } from "./mas/EditorTema"
 import { Archivo } from "./mas/Archivo"
@@ -36,7 +37,7 @@ function Sub({ titulo, children }: { titulo: string; children: React.ReactNode }
       <button className="volver" onClick={() => volver("/mas")}>
         ← Más
       </button>
-      <TituloCinetico texto={titulo} />
+      <TituloCinetico texto={titulo} className="sub-titulo" />
       {children}
     </div>
   )
@@ -48,9 +49,9 @@ function Menu() {
   const i = usuarios.findIndex((u) => u.id === yo?.id)
   return (
     <div className="mas">
-      <header className="planes-cabeza">
-        <TituloCinetico texto="Más cosas" />
-      </header>
+      <section className="capitulo" style={{ "--cap": "var(--manteca)" } as React.CSSProperties}>
+        <TituloCinetico lineas={["Más", "cosas"]} asoma="taller" />
+      </section>
 
       <section className="perfil" style={{ "--c": colorDe(yo ?? undefined, Math.max(0, i)) } as React.CSSProperties}>
         <span className="perfil-blob">{yo?.name?.[0]}</span>
@@ -94,6 +95,7 @@ function Menu() {
       </div>
 
       <Avisos />
+      <Sonidos />
 
       <section className="seccion bloque">
         <div className="seccion-cabeza">
@@ -122,6 +124,28 @@ function Menu() {
         </div>
       </section>
     </div>
+  )
+}
+
+function Sonidos() {
+  const [si, setSi] = useState(sonidosPrendidos)
+  return (
+    <section className="seccion bloque">
+      <div className="seccion-cabeza">
+        <h2>Sonidos</h2>
+      </div>
+      <label className="interruptor">
+        <span>Ruiditos al tocar, al votar y al hacer un plan (en este teléfono)</span>
+        <input
+          type="checkbox"
+          checked={si}
+          onChange={(e) => {
+            setSi(e.target.checked)
+            prenderSonidos(e.target.checked)
+          }}
+        />
+      </label>
+    </section>
   )
 }
 

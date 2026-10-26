@@ -14,8 +14,7 @@
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@fontsource-variable/dm-sans": "^5.3.0",
     "@fontsource-variable/fraunces": "^5.3.0",
-    "@fontsource-variable/unbounded": "^5.3.0",
-    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/lilita-one": "^5.3.0",
     "@fontsource/space-mono": "^5.3.0",
     "canvas-confetti": "^1.9.4",
     "motion": "^14.6.0",
@@ -33,6 +32,7 @@
     "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.0.5",
     "workbox-build": "^7.4.1",
+    "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",
     "workbox-window": "^7.4.1"
   }
