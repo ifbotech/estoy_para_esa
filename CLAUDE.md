@@ -76,7 +76,11 @@ se carga con `require(`${__hooks}/util.js`)` adentro de cada handler.
 - `web/src/componentes/Deco.tsx`: las piezas del sistema (Bloque, Segmentos,
   EtiquetaSimetria, Sello, EnVivo). `Controles.tsx`: BarraGanas y
   GanasDeLosDos (voto a ciegas + destape + match).
-- `web/src/pantallas/`: Hoy, Planes, PlanDetalle, NuevoPlan, Recuerdos, Wrapped, Más.
+- `web/src/pantallas/`: Sumar, Planes, PlanDetalle, NuevoPlan, Recuerdos, Wrapped, Más.
+  La app arranca en **Sumar** (nueva aventura: elegís la categoría y se abre
+  NuevoPlan con eso). En **Planes** se ven todos los pendientes y se votan
+  de un toque (`VotoRapido`, sigue siendo a ciegas); ahí vive la máquina
+  Sorpréndanme (`componentes/Maquina.tsx`).
 - `web/src/secciones/`: lo especial de cada personalidad (cine, lugar, viaje, taller).
 - `web/src/componentes/Arte.tsx` + `estilos/arte.css`: los dibujos con CSS.
 - `server/`: PocketBase + `$epe.webpush` para los hooks + comando `usuario`.

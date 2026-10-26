@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
  * Rutas con #: el mismo build anda en /estoyparaesa/ y en cualquier versión
  * archivada sin configurar nada en el servidor.
  *
- *   #/                  Hoy
+ *   #/                  Sumar (nueva aventura)
  *   #/planes?estado=…&cat=…
  *   #/plan/<id>
  *   #/recuerdos

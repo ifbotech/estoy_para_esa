@@ -1,7 +1,12 @@
 import { vibrar } from "../util/efectos"
 
 const ICONOS: Record<string, React.ReactNode> = {
-  "": <path d="M12 2l2.2 6.3L20.5 6l-3.6 5.6L22 14l-6.4.6L16 21l-4-5-4 5 .4-6.4L2 14l5.1-2.4L3.5 6l6.3 2.3z" />,
+  "": (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M12 7.5v9M7.5 12h9" />
+    </>
+  ),
   planes: <path d="M4 6h16M4 12h11M4 18h7" />,
   recuerdos: (
     <>
@@ -19,39 +24,30 @@ const ICONOS: Record<string, React.ReactNode> = {
 }
 
 const TABS = [
-  { id: "", nombre: "Hoy" },
+  { id: "", nombre: "Sumar" },
   { id: "planes", nombre: "Planes" },
-  { id: "+", nombre: "Nuevo" },
   { id: "recuerdos", nombre: "Recuerdos" },
   { id: "mas", nombre: "Más" },
 ]
 
-/** La barra de abajo: fija, de borde a borde, celdas separadas por tinta. */
-export function BarraNav({ actual, onNuevo }: { actual: string; onNuevo: () => void }) {
+/** La barra de abajo: fija, de borde a borde, celdas separadas por tinta. Sumar es la primera. */
+export function BarraNav({ actual }: { actual: string }) {
   return (
     <nav className="nav" aria-label="Secciones">
-      {TABS.map((t) =>
-        t.id === "+" ? (
-          <button
-            key="+"
-            className="nav-mas"
-            aria-label="Nuevo plan"
-            onClick={() => {
-              vibrar(15)
-              onNuevo()
-            }}
-          >
-            <span aria-hidden>+</span>
-          </button>
-        ) : (
-          <a key={t.id} href={`#/${t.id}`} className={`nav-tab ${actual === t.id ? "activa" : ""}`} aria-current={actual === t.id ? "page" : undefined}>
-            <svg className="nav-icono" viewBox="0 0 24 24" aria-hidden>
-              {ICONOS[t.id]}
-            </svg>
-            <span className="nav-nombre">{t.nombre}</span>
-          </a>
-        ),
-      )}
+      {TABS.map((t) => (
+        <a
+          key={t.id}
+          href={`#/${t.id}`}
+          className={`nav-tab ${t.id === "" ? "nav-sumar" : ""} ${actual === t.id ? "activa" : ""}`}
+          aria-current={actual === t.id ? "page" : undefined}
+          onClick={() => vibrar(10)}
+        >
+          <svg className="nav-icono" viewBox="0 0 24 24" aria-hidden>
+            {ICONOS[t.id]}
+          </svg>
+          <span className="nav-nombre">{t.nombre}</span>
+        </a>
+      ))}
     </nav>
   )
 }

@@ -2,9 +2,10 @@ import { useMemo, useState } from "react"
 import { barriosConquistados, curaduriaPelis, rankear } from "../calculos"
 import { Arte } from "../componentes/Arte"
 import { Bloque } from "../componentes/Deco"
-import { TarjetaPlan } from "../componentes/Tarjetas"
+import { Maquina } from "../componentes/Maquina"
+import { TarjetaPlan, VotoRapido } from "../componentes/Tarjetas"
 import type { Ruta } from "../router"
-import { useStore } from "../store"
+import { useStore, useYo } from "../store"
 import { ESTADOS, type Categoria, type Estado, type Plan, type Voto } from "../tipos"
 
 function normalizar(s: string) {
@@ -15,22 +16,33 @@ export function Planes({ ruta }: { ruta: Ruta }) {
   const planes = useStore((s) => s.planes)
   const votos = useStore((s) => s.votos)
   const categorias = useStore((s) => s.categorias)
-  const [estado, setEstado] = useState<Estado>((ruta.query.get("estado") as Estado) || "idea")
+  const yo = useYo()
+  // «todos» son los que siguen pendientes; los hechos viven en su pestaña y en Recuerdos
+  const [estado, setEstado] = useState<Estado | "todos">((ruta.query.get("estado") as Estado) || "todos")
+  const [soloPorVotar, setSoloPorVotar] = useState(ruta.query.has("votar"))
   const [cat, setCat] = useState<string | null>(ruta.query.get("cat"))
   const [busqueda, setBusqueda] = useState("")
 
+  const yaVote = (id: string) => votos.some((v) => v.plan === id && v.usuario === yo?.id)
+  const enEstado = (p: Plan, e: Estado | "todos") => (e === "todos" ? p.estado !== "hecho" : p.estado === e)
   const lista = useMemo(() => {
     const q = normalizar(busqueda.trim())
     const filtrados = planes.filter(
-      (p) => (q ? true : p.estado === estado) && (!cat || p.categoria === cat) && (!q || normalizar(p.titulo + " " + p.notas).includes(q)),
+      (p) =>
+        (q ? true : enEstado(p, estado)) &&
+        (!cat || p.categoria === cat) &&
+        (!q || normalizar(p.titulo + " " + p.notas).includes(q)) &&
+        (!soloPorVotar || !yaVote(p.id)),
     )
     const r = rankear(filtrados, votos)
     if (estado === "hecho" && !q) r.sort((a, b) => b.plan.hecho_en.localeCompare(a.plan.hecho_en))
     if (estado === "agendado" && !q) r.sort((a, b) => (a.plan.cuando || "9999").localeCompare(b.plan.cuando || "9999"))
     return r
-  }, [planes, votos, estado, cat, busqueda])
+  }, [planes, votos, estado, cat, busqueda, soloPorVotar, yo?.id])
 
-  const cuenta = (e: Estado) => planes.filter((p) => p.estado === e && (!cat || p.categoria === cat)).length
+  const cuenta = (e: Estado | "todos") => planes.filter((p) => enEstado(p, e) && (!cat || p.categoria === cat)).length
+  const porVotar = planes.filter((p) => p.estado !== "hecho" && (!cat || p.categoria === cat) && !yaVote(p.id)).length
+  const ranking = useMemo(() => rankear(planes, votos), [planes, votos])
   const catActual = categorias.find((c) => c.id === cat)
   const deLaCategoria = catActual ? planes.filter((p) => p.categoria === catActual.id) : []
 
@@ -38,7 +50,7 @@ export function Planes({ ruta }: { ruta: Ruta }) {
     <div className="planes">
       <header className="cabeza-pantalla" style={{ "--cc": catActual?.color ?? "var(--amarillo)" } as React.CSSProperties}>
         <div>
-          <p className="etiqueta">{catActual ? "categoría" : "ordenados por ganas"}</p>
+          <p className="etiqueta">{catActual ? "categoría" : "todos, ordenados por ganas"}</p>
           <h1 className="titulo-pantalla">{catActual ? `${catActual.emoji} ${catActual.nombre}` : "Planes"}</h1>
         </div>
         {catActual && (
@@ -51,7 +63,7 @@ export function Planes({ ruta }: { ruta: Ruta }) {
       <input className="campo buscador" type="search" placeholder="Buscar un plan…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
 
       <div className="filtro-estados" role="tablist" aria-label="Estado">
-        {ESTADOS.map((e, i) => (
+        {[{ id: "todos" as const, nombre: "Todos" }, ...ESTADOS].map((e, i) => (
           <button
             key={e.id}
             role="tab"
@@ -62,7 +74,7 @@ export function Planes({ ruta }: { ruta: Ruta }) {
               setBusqueda("")
             }}
           >
-            <span className="filtro-num num">{String(i + 1).padStart(2, "0")}</span>
+            <span className="filtro-num num">{i ? String(i).padStart(2, "0") : "∗"}</span>
             <span className="filtro-nombre">{e.nombre}</span>
             <span className="filtro-cuenta num">{cuenta(e.id)}</span>
           </button>
@@ -70,6 +82,9 @@ export function Planes({ ruta }: { ruta: Ruta }) {
       </div>
 
       <div className="fila-scroll chips-cat">
+        <button className="chip chip-votar" aria-pressed={soloPorVotar} onClick={() => setSoloPorVotar(!soloPorVotar)}>
+          🗳️ Por votar <span className="num">{porVotar}</span>
+        </button>
         <button className="chip" aria-pressed={!cat} onClick={() => setCat(null)}>
           Todas
         </button>
@@ -92,21 +107,38 @@ export function Planes({ ruta }: { ruta: Ruta }) {
 
       <div className="lista-planes">
         {lista.map((r, i) => (
-          <TarjetaPlan
-            key={r.plan.id}
-            r={r}
-            conEstado={Boolean(busqueda.trim())}
-            puesto={estado !== "hecho" && estado !== "agendado" && !busqueda && r.promedio !== null ? i + 1 : undefined}
-          />
+          <div key={r.plan.id} className="plan-votable">
+            <TarjetaPlan
+              r={r}
+              conEstado={Boolean(busqueda.trim()) || estado === "todos"}
+              puesto={estado !== "hecho" && estado !== "agendado" && !busqueda && r.promedio !== null ? i + 1 : undefined}
+            />
+            {r.plan.estado !== "hecho" && !yaVote(r.plan.id) && <VotoRapido planId={r.plan.id} />}
+          </div>
         ))}
       </div>
 
       {!lista.length && (
         <div className="vacio">
           <Arte tipo={catActual?.personalidad ?? "salida"} tam={10} />
-          <p>{busqueda ? "Nada con ese nombre." : estado === "hecho" ? "Todavía nada hecho acá." : "Nada por acá todavía. Tocá el + para sumar uno."}</p>
+          <p>
+            {busqueda
+              ? "Nada con ese nombre."
+              : soloPorVotar
+                ? "Votaste todo. ¡Bien ahí! 🗳️"
+                : estado === "hecho"
+                  ? "Todavía nada hecho acá."
+                  : "Nada por acá todavía."}
+          </p>
+          {!busqueda && !soloPorVotar && estado !== "hecho" && (
+            <a className="boton boton-chico" href="#/">
+              + Sumar una aventura
+            </a>
+          )}
         </div>
       )}
+
+      {!busqueda && <Maquina ranking={ranking} />}
     </div>
   )
 }
