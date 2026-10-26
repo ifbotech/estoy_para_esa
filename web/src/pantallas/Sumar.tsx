@@ -1,8 +1,9 @@
-import { aCiegas } from "../calculos"
+import { aCiegas, fecha } from "../calculos"
 import { Arte } from "../componentes/Arte"
 import { useStore, useYo } from "../store"
 import type { Personalidad } from "../tipos"
 import { vibrar } from "../util/efectos"
+import { nombreWrap, useWrap } from "../wrap"
 
 /** Qué se suma con cada personalidad: «una peli», «un viaje»… */
 const QUE: Record<Personalidad, string> = {
@@ -24,6 +25,7 @@ export function Sumar({ onNuevo }: { onNuevo: (categoria?: string) => void }) {
   const planes = useStore((s) => s.planes)
   const votos = useStore((s) => s.votos)
   const yo = useYo()
+  const wrap = useWrap()
   const pendientes = planes.filter((p) => p.estado !== "hecho")
   const porVotar = pendientes.filter((p) => !votos.some((v) => v.plan === p.id && v.usuario === yo?.id))
   const tapados = porVotar.filter((p) => aCiegas(votos.filter((v) => v.plan === p.id), yo?.id)).length
@@ -41,6 +43,18 @@ export function Sumar({ onNuevo }: { onNuevo: (categoria?: string) => void }) {
           <h1 className="titulo-pantalla">¿Qué sumamos{yo?.name ? `, ${yo.name}` : ""}?</h1>
         </div>
       </header>
+
+      {wrap && (
+        <a href="#/wrapped" className="sumar-wrap">
+          <span className="sumar-wrap-texto">
+            <span className="etiqueta">🎁 llegó · hasta el {fecha(wrap.cierra)?.toLocaleDateString("es-AR", { day: "numeric", month: "long" })}</span>
+            <b>Su Wrapped {nombreWrap(wrap)}</b>
+          </span>
+          <span className="sumar-wrap-play" aria-hidden>
+            ▶
+          </span>
+        </a>
+      )}
 
       <button className="sumar-charla" onClick={() => abrir()}>
         <span className="sumar-charla-campo">Contalo como te salga…</span>

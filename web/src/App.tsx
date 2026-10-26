@@ -9,14 +9,14 @@ import { Login } from "./pantallas/Login"
 import { Mas } from "./pantallas/Mas"
 import { PlanDetalle } from "./pantallas/PlanDetalle"
 import { Planes } from "./pantallas/Planes"
-import { Recuerdos } from "./pantallas/Recuerdos"
 import { Sumar } from "./pantallas/Sumar"
 import { Wrapped } from "./pantallas/Wrapped"
 import { enArchivo, pb } from "./pb"
-import { useRuta } from "./router"
+import { ir, useRuta } from "./router"
 import { iniciar, useStore } from "./store"
 import { momentum } from "./calculos"
 import { volver } from "./router"
+import { marcarWrapVisto, traerWrap, wrapVisto } from "./wrap"
 
 export function App() {
   const [logueado, setLogueado] = useState(pb.authStore.isValid)
@@ -38,6 +38,17 @@ export function App() {
     // Renueva el token de vez en cuando: así no hay que volver a entrar nunca.
     pb.collection("users").authRefresh().catch(() => {})
   }, [logueado])
+
+  // Cuando el servidor abre un Wrapped, la primera vez se abre solo (como el de Spotify).
+  useEffect(() => {
+    if (!listo) return
+    traerWrap().then((w) => {
+      if (w && !wrapVisto(w) && !location.hash.startsWith("#/wrapped")) {
+        marcarWrapVisto(w)
+        ir("/wrapped")
+      }
+    })
+  }, [listo])
 
   useEffect(() => pb.authStore.onChange(() => setLogueado(pb.authStore.isValid)), [])
 
@@ -72,11 +83,8 @@ export function App() {
     case "plan":
       pantalla = <PlanDetalle id={ruta.partes[1]} />
       break
-    case "recuerdos":
-      pantalla = <Recuerdos />
-      break
     case "wrapped":
-      pantalla = <Wrapped anio={Number(ruta.partes[1]) || new Date().getFullYear()} />
+      pantalla = <Wrapped />
       break
     case "mas":
       pantalla = <Mas sub={ruta.partes[1]} />
@@ -116,7 +124,7 @@ export function App() {
   )
 }
 
-const NOMBRES: Record<string, string> = { planes: "Planes", recuerdos: "Recuerdos", mas: "Más", plan: "Plan" }
+const NOMBRES: Record<string, string> = { planes: "Planes", mas: "Más", plan: "Plan" }
 
 /** La barra de arriba: la marca (o volver en las internas), el en vivo y lo hecho. */
 function BarraSuperior({ seccion, sub }: { seccion: string; sub?: string }) {

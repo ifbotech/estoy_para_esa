@@ -7,6 +7,10 @@ onRecordCreateRequest((e) => {
   if (!e.record.getString("estado")) e.record.set("estado", "idea")
   e.next()
 
+  const a = require(`${__hooks}/actividad.js`)
+  a.registrar(e.app, "plan_nuevo", e.record, e.auth ? e.auth.id : "")
+  if (e.record.getString("estado") !== "idea") a.registrar(e.app, e.record.getString("estado"), e.record, e.auth ? e.auth.id : "")
+
   const u = require(`${__hooks}/util.js`)
   const quien = u.nombre(e.app, e.auth ? e.auth.id : "")
   u.notificar(e.app, e.auth ? e.auth.id : "", {
@@ -19,9 +23,15 @@ onRecordCreateRequest((e) => {
 
 onRecordUpdateRequest((e) => {
   const antes = e.record.original().getString("estado")
+  const fotosAntes = e.record.original().getStringSlice("fotos").length
   e.next()
   const ahora = e.record.getString("estado")
+  const autor = e.auth ? e.auth.id : ""
+  const a = require(`${__hooks}/actividad.js`)
+  const fotos = e.record.getStringSlice("fotos").length
+  if (fotos > fotosAntes) a.registrar(e.app, "fotos", e.record, autor, { cantidad: fotos - fotosAntes })
   if (antes === ahora) return
+  a.registrar(e.app, ahora === "idea" ? "a_idea" : ahora, e.record, autor, { antes })
 
   const u = require(`${__hooks}/util.js`)
   const quien = u.nombre(e.app, e.auth ? e.auth.id : "")
@@ -34,6 +44,12 @@ onRecordUpdateRequest((e) => {
   }
   const [title, body] = textos[ahora] || ["Cambio de plan", titulo]
   u.notificar(e.app, e.auth ? e.auth.id : "", { title, body, url: `#/plan/${e.record.id}`, tag: `plan-${e.record.id}` })
+}, "planes")
+
+onRecordDeleteRequest((e) => {
+  const plan = e.record
+  e.next()
+  require(`${__hooks}/actividad.js`).registrar(e.app, "borrado", plan, e.auth ? e.auth.id : "", { estado: plan.getString("estado") })
 }, "planes")
 
 // hecho_en lo pone el servidor: es lo que usan los recuerdos y el Wrapped.
@@ -60,15 +76,38 @@ onRecordUpdate((e) => {
 
 onRecordCreateRequest((e) => {
   e.next()
+  require(`${__hooks}/actividad.js`).voto(e.app, e.record, null)
   require(`${__hooks}/votos.js`).avisar(e, 0, 0, true)
 }, "votos")
 
 onRecordUpdateRequest((e) => {
-  const ganasAntes = e.record.original().getFloat("ganas")
-  const puntajeAntes = e.record.original().getFloat("puntaje")
+  const o = e.record.original()
+  const antes = { ganas: o.getFloat("ganas"), puntaje: o.getFloat("puntaje"), resena: o.getString("resena") }
   e.next()
-  require(`${__hooks}/votos.js`).avisar(e, ganasAntes, puntajeAntes, false)
+  require(`${__hooks}/actividad.js`).voto(e.app, e.record, antes)
+  require(`${__hooks}/votos.js`).avisar(e, antes.ganas, antes.puntaje, false)
 }, "votos")
+
+// --- ítems: cada paso tachado (valija, proyecto, itinerario) va al diario ---
+
+onRecordUpdateRequest((e) => {
+  const antes = e.record.original().getBool("hecho")
+  e.next()
+  if (antes || !e.record.getBool("hecho")) return
+  const a = require(`${__hooks}/actividad.js`)
+  const plan = a.planDe(e.app, e.record)
+  if (plan) a.registrar(e.app, "item_hecho", plan, e.auth ? e.auth.id : "", { lista: e.record.getString("lista"), texto: e.record.getString("texto") })
+}, "items")
+
+// --- Wrapped: a mitad y a fin de año (12:00 UTC = 9 de la mañana acá) -------
+
+cronAdd("wrap-mitad", "0 12 30 6 *", () => {
+  require(`${__hooks}/wrap.js`).deLaFecha($app, "mitad")
+})
+
+cronAdd("wrap-anio", "0 12 31 12 *", () => {
+  require(`${__hooks}/wrap.js`).deLaFecha($app, "anio")
+})
 
 // --- temas: número de versión y un solo tema activo ------------------------
 
@@ -97,6 +136,17 @@ onRecordAfterUpdateSuccess((e) => {
 routerAdd("GET", "/api/epe/salud", (e) => {
   return e.json(200, { ok: true, app: "estoyparaesa" })
 })
+
+// Para probar o rehacer un Wrapped a mano (sólo desde el panel de datos):
+// POST {"anio": 2026, "tipo": "mitad" | "anio", "dias": 21, "avisar": false}
+routerAdd("POST", "/api/epe/wrap/generar", (e) => {
+  const w = require(`${__hooks}/wrap.js`)
+  const b = e.requestInfo().body || {}
+  const anio = parseInt(b.anio, 10) || new Date().getUTCFullYear()
+  const tipo = b.tipo === "mitad" ? "mitad" : "anio"
+  const r = b.avisar ? w.deLaFecha(e.app, tipo) : w.generar(e.app, anio, tipo, parseFloat(b.dias) || 0)
+  return e.json(200, { periodo: r.getString("periodo"), abre: r.getString("abre"), cierra: r.getString("cierra") })
+}, $apis.requireSuperuserAuth())
 
 routerAdd("GET", "/api/epe/push/clave", (e) => {
   return e.json(200, { clave: $epe.vapidPublicKey() })

@@ -1,4 +1,4 @@
-import type { Categoria, Estado, Item, Personalidad, Plan, Usuario, Voto } from "./tipos"
+import type { Actividad, Categoria, Estado, Item, Personalidad, Plan, Usuario, Voto } from "./tipos"
 
 // --- ganas y ranking -------------------------------------------------------
 
@@ -382,8 +382,23 @@ export function curaduriaPelis(pelis: Plan[], votos: Voto[]): Curaduria {
 
 // --- el Wrapped ------------------------------------------------------------
 
+/** De cuándo a cuándo (hasta exclusivo) cuenta un Wrapped. */
+export interface Periodo {
+  anio: number
+  tipo: "mitad" | "anio"
+  desde: Date
+  hasta: Date
+}
+
+export function periodoAnual(anio: number): Periodo {
+  return { anio, tipo: "anio", desde: new Date(anio, 0, 1), hasta: new Date(anio + 1, 0, 1) }
+}
+
 export interface Resumen {
   anio: number
+  tipo: "mitad" | "anio"
+  /** cuántos meses entran en el período (6 o 12) */
+  meses: number
   hechos: Plan[]
   total: number
   porCategoria: { categoria: Categoria; cantidad: number; pct: number }[]
@@ -406,15 +421,24 @@ export interface Resumen {
 
 const DIA = 24 * 3600 * 1000
 
-export function resumenAnual(
-  anio: number,
+export function resumenAnual(anio: number, planes: Plan[], votos: Voto[], categorias: Categoria[], items: Item[]): Resumen {
+  return resumenPeriodo(periodoAnual(anio), planes, votos, categorias, items)
+}
+
+export function resumenPeriodo(
+  periodo: Periodo,
   planes: Plan[],
   votos: Voto[],
   categorias: Categoria[],
   items: Item[],
 ): Resumen {
+  const { anio } = periodo
+  const enPeriodo = (s: string) => {
+    const d = fecha(s)
+    return Boolean(d && d >= periodo.desde && d < periodo.hasta)
+  }
   const hechos = planes
-    .filter((p) => p.estado === "hecho" && fecha(p.hecho_en)?.getFullYear() === anio)
+    .filter((p) => p.estado === "hecho" && enPeriodo(p.hecho_en))
     .sort((a, b) => a.hecho_en.localeCompare(b.hecho_en))
   const total = hechos.length
   const cat = (p: Plan) => categorias.find((c) => c.id === p.categoria)
@@ -490,7 +514,7 @@ export function resumenAnual(
     }
   }
 
-  const delAnio = planes.filter((p) => fecha(p.created)?.getFullYear() === anio)
+  const delAnio = planes.filter((p) => enPeriodo(p.created))
   const idsAnio = new Set([...delAnio, ...hechos].map((p) => p.id))
   const porPersona = new Map<string, number[]>()
   for (const v of votos) {
@@ -517,6 +541,8 @@ export function resumenAnual(
 
   return {
     anio,
+    tipo: periodo.tipo,
+    meses: periodo.tipo === "mitad" ? 6 : 12,
     hechos,
     total,
     porCategoria,
@@ -537,5 +563,51 @@ export function resumenAnual(
     fotos: hechos.reduce((a, p) => a + (p.fotos?.length ?? 0), 0),
   }
 }
+
+/** Lo que cuenta el diario: cuánto se movieron más allá de lo hecho. */
+export interface NumerosActividad {
+  ideas: number
+  votos: number
+  matches: number
+  agendados: number
+  puntajes: number
+  resenas: number
+  fotos: number
+  tachados: number
+  /** quién sumó más ideas (si alguien sumó) */
+  ideasPorPersona: { usuario: string; cantidad: number }[]
+  /** los matches totales, en orden */
+  planesMatch: string[]
+  /** el día de la semana con más movimiento (0 = domingo) */
+  diaTop: number | null
+}
+
+export function numerosActividad(actividad: Actividad[]): NumerosActividad {
+  const de = (t: Actividad["tipo"]) => actividad.filter((a) => a.tipo === t)
+  const ideas = de("plan_nuevo")
+  const porPersona = new Map<string, number>()
+  for (const a of ideas) if (a.usuario) porPersona.set(a.usuario, (porPersona.get(a.usuario) ?? 0) + 1)
+  const dias = Array.from({ length: 7 }, () => 0)
+  for (const a of actividad) {
+    const d = fecha(a.cuando)
+    if (d) dias[d.getDay()]++
+  }
+  const max = Math.max(...dias)
+  return {
+    ideas: ideas.length,
+    votos: de("ganas").length,
+    matches: de("match").length,
+    agendados: de("agendado").length,
+    puntajes: de("puntaje").length,
+    resenas: de("resena").length,
+    fotos: de("fotos").reduce((n, a) => n + (Number(a.datos?.cantidad) || 1), 0),
+    tachados: de("item_hecho").length,
+    ideasPorPersona: [...porPersona].map(([usuario, cantidad]) => ({ usuario, cantidad })).sort((a, b) => b.cantidad - a.cantidad),
+    planesMatch: [...new Set(de("match").map((a) => a.titulo))],
+    diaTop: max > 0 ? dias.indexOf(max) : null,
+  }
+}
+
+export const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]
 
 export const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]

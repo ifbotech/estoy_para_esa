@@ -88,6 +88,44 @@ export interface Item extends Base {
   veredicto: "" | "repetir" | "pasar"
 }
 
+/** Una línea del diario de la app (la anotan los hooks del servidor). */
+export interface Actividad {
+  tipo:
+    | "plan_nuevo" | "agendado" | "en_curso" | "hecho" | "a_idea" | "borrado"
+    | "ganas" | "match" | "puntaje" | "resena" | "fotos" | "item_hecho"
+  cuando: string
+  plan: string
+  titulo: string
+  categoria: string
+  usuario: string
+  datos: Record<string, unknown>
+}
+
+/**
+ * Un Wrapped: la foto congelada de un período (mitad o año entero) que arma
+ * el servidor el 30/6 y el 31/12. Sólo se puede leer mientras está abierto.
+ */
+export interface Wrap extends Base {
+  periodo: string
+  tipo: "mitad" | "anio"
+  anio: number
+  desde: string
+  hasta: string
+  abre: string
+  cierra: string
+  datos: {
+    generado: string
+    usuarios: Usuario[]
+    categorias: Categoria[]
+    planes: Plan[]
+    votos: Voto[]
+    items: Item[]
+    actividad: Actividad[]
+    /** cuándo se hizo cada plan, desde el primero (para el ritmo) */
+    historico: string[]
+  }
+}
+
 export const ESTADOS: { id: Estado; nombre: string; emoji: string }[] = [
   { id: "idea", nombre: "Idea", emoji: "💡" },
   { id: "agendado", nombre: "Agendado", emoji: "📅" },

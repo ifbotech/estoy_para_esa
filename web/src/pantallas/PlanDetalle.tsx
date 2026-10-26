@@ -274,7 +274,7 @@ function SelloRecuerdo({ plan }: { plan: Plan }) {
           </li>
         ))}
       </ul>
-      {s.completo && <p className="nota-pie">✦ 100 % sellado. Queda así en Recuerdos y en el Wrapped.</p>}
+      {s.completo && <p className="nota-pie">✦ 100 % sellado. Queda así para el Wrapped.</p>}
     </Bloque>
   )
 }

@@ -100,19 +100,19 @@ h1, h2, h3, h4 { font-family: var(--f-display); font-weight: 800; line-height: 1
 .link-sutil { justify-self: center; min-height: var(--toque); font-family: var(--f-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; }
 
 /* --- física de botón mecánico -------------------------------------------- */
-.boton, .chip, .tarjeta, .opcion, .persona, .agenda-item, .ticket, .aviso-voto, .cat-boton, .nuevo-cat,
-.recordatorio, .sello-pendiente, .cta-wrapped, .ticket-wrapped, .polaroid, .version-tapa,
+.boton, .chip, .tarjeta, .opcion, .persona, .aviso-voto, .cat-boton, .nuevo-cat,
+.recordatorio, .version-tapa,
 .mapa-boton, .w-cerrar, .cat-fila-acciones button, .veredicto button, .banda-acciones button, .banda-cat, .filtro-estado, .paso,
-.sumar-charla, .sumar-cat, .sumar-ver {
+.sumar-charla, .sumar-cat, .sumar-ver, .sumar-wrap {
   transition: transform var(--rapido) ease-out, box-shadow var(--rapido) ease-out, background-color var(--rapido);
 }
-.boton:focus-visible, .chip:focus-visible, .opcion:focus-visible, .persona:focus-visible, .agenda-item:focus-visible,
-.ticket:focus-visible, .aviso-voto:focus-visible, .cat-boton:focus-visible, .nuevo-cat:focus-visible, .recordatorio:focus-visible,
-.sello-pendiente:focus-visible, .cta-wrapped:focus-visible, .sumar-charla:focus-visible, .sumar-cat:focus-visible, .sumar-ver:focus-visible, .ticket-wrapped:focus-visible, .polaroid:focus-visible,
-.boton:active:not(:disabled), .chip:active:not(:disabled), .opcion:active, .persona:active, .agenda-item:active,
-.ticket:active, .aviso-voto:active, .cat-boton:active, .nuevo-cat:active, .recordatorio:active:not(:disabled),
-.sello-pendiente:active, .cta-wrapped:active, .ticket-wrapped:active, .polaroid:active, .version-tapa:active,
-.mapa-boton:active, .w-cerrar:active, .sumar-charla:active, .sumar-cat:active, .sumar-ver:active, .cat-fila-acciones button:active:not(:disabled), .veredicto button:active {
+.boton:focus-visible, .chip:focus-visible, .opcion:focus-visible, .persona:focus-visible,
+.aviso-voto:focus-visible, .cat-boton:focus-visible, .nuevo-cat:focus-visible, .recordatorio:focus-visible,
+.sumar-charla:focus-visible, .sumar-wrap:focus-visible, .sumar-cat:focus-visible, .sumar-ver:focus-visible,
+.boton:active:not(:disabled), .chip:active:not(:disabled), .opcion:active, .persona:active,
+.aviso-voto:active, .cat-boton:active, .nuevo-cat:active, .recordatorio:active:not(:disabled),
+.version-tapa:active,
+.mapa-boton:active, .w-cerrar:active, .sumar-charla:active, .sumar-wrap:active, .sumar-cat:active, .sumar-ver:active, .cat-fila-acciones button:active:not(:disabled), .veredicto button:active {
   transform: translate(2px, 2px);
   box-shadow: 0 0 0 var(--tinta);
 }
@@ -162,7 +162,7 @@ h1, h2, h3, h4 { font-family: var(--f-display); font-weight: 800; line-height: 1
   bottom: 0;
   z-index: 40;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   padding-bottom: var(--sup-abajo);
   background: var(--superficie);
   border-top: var(--borde);

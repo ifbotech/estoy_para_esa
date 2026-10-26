@@ -70,6 +70,11 @@
   font-weight: 800;
   border-radius: 0 4px 4px 0;
 }
+.sumar-wrap { display: flex; align-items: stretch; margin-bottom: var(--gap-bloques); border: var(--borde); border-radius: var(--radio); background: var(--tinta); color: var(--amarillo); box-shadow: var(--sombra); overflow: hidden; }
+.sumar-wrap-texto { flex: 1; display: grid; gap: 4px; padding: 14px 16px; }
+.sumar-wrap-texto .etiqueta { color: var(--papel); }
+.sumar-wrap-texto b { font-family: var(--f-display); font-weight: 800; font-size: 28px; line-height: 0.95; text-transform: uppercase; font-stretch: 80%; font-variation-settings: "wdth" 80; }
+.sumar-wrap-play { flex: none; width: 64px; display: grid; place-items: center; border-left: 2px solid var(--amarillo); font-size: 26px; }
 .sumar-o { margin: var(--gap-bloques) 0 10px; }
 .sumar-cats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .sumar-cat {
@@ -135,12 +140,6 @@
 .checklist li.ok .check { background: var(--c, var(--verde)); }
 
 
-/* ritmo compartido */
-.momentum { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 20px; background: var(--superficie); border: var(--borde); border-radius: var(--radio); box-shadow: var(--sombra); overflow: hidden; }
-.momentum > div { display: grid; gap: 4px; align-content: start; padding: 12px; border-left: var(--borde); }
-.momentum > div:first-child { border-left: 0; }
-.momentum b { font-size: 26px; font-weight: 700; line-height: 1; text-transform: capitalize; }
-.momentum span { font-family: var(--f-mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--suave); line-height: 1.3; }
 
 /* --- planes --------------------------------------------------------------- */
 .buscador { margin-bottom: 12px; }
@@ -346,30 +345,6 @@
 .rapida-cabeza img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .rapida-cabeza .chip-cat { position: absolute; left: 8px; top: 8px; background: var(--superficie); }
 
-/* --- recuerdos ------------------------------------------------------------ */
-.tickets { margin-top: 16px; padding-bottom: 6px; }
-.ticket-wrapped { flex: none; display: grid; grid-template-columns: auto auto; align-items: end; gap: 0 14px; padding: 10px 16px; border: var(--borde); border-radius: var(--radio); background: var(--tinta); color: var(--amarillo); box-shadow: var(--sombra-chica); scroll-snap-align: start; }
-.ticket-wrapped .etiqueta { grid-column: 1 / -1; color: var(--papel); font-size: 10px; }
-.ticket-wrapped b { font-size: 28px; line-height: 1; }
-.ticket-wrapped span:last-child { font-size: 20px; font-weight: 700; }
-.filtros-recuerdos { margin-top: 14px; }
-.filtros-recuerdos .chip .num { font-size: 12px; }
-.linea-tiempo { display: grid; gap: 28px; margin-top: 22px; }
-.mes-titulo { display: flex; align-items: baseline; gap: 8px; padding-bottom: 6px; margin-bottom: 14px; border-bottom: var(--borde); font-size: 28px; text-transform: uppercase; font-stretch: 75%; font-variation-settings: "wdth" 75; }
-.mes-titulo .num { font-size: 18px; color: var(--suave); }
-.mes-titulo small { margin-left: auto; font-size: 12px; font-weight: 700; padding: 1px 6px; border: var(--borde); border-radius: 3px; }
-.polaroids { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; }
-.polaroid { display: block; padding: 8px 8px 10px; background: var(--superficie); border: var(--borde); border-radius: 4px; box-shadow: var(--sombra); }
-.polaroid.grande { width: min(100%, 320px); }
-.polaroid-foto { position: relative; aspect-ratio: 1; display: grid; place-items: center; border: var(--borde); overflow: hidden; }
-.polaroid-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.polaroid-mas { position: absolute; right: 6px; bottom: 6px; padding: 1px 6px; border-radius: 3px; background: var(--tinta); color: var(--papel); font-size: 11px; font-weight: 700; }
-.polaroid-titulo { margin: 8px 0 6px; font-weight: 700; font-size: 15px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.polaroid-pie { display: grid; gap: 6px; }
-.polaroid-pie > .num { font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--suave); }
-.polaroid .segmentos-barra span { height: 10px; }
-.polaroid .segmentos-texto { font-size: 9.5px; }
-
 /* --- wrapped -------------------------------------------------------------- */
 .wrapped { position: fixed; inset: 0; z-index: 50; overflow: hidden; color: var(--tinta); background: var(--papel); }
 .w-f1 { background: var(--amarillo); }
@@ -415,6 +390,8 @@
 .w-mes-letra { font-family: var(--f-mono); font-size: 11px; font-weight: 700; text-align: center; }
 .w-posters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; max-width: 340px; }
 .w-posters img { aspect-ratio: 2 / 3; width: 100%; object-fit: cover; border: var(--borde); border-radius: 3px; }
+.w-collage { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; max-width: 320px; }
+.w-collage img { aspect-ratio: 1; width: 100%; object-fit: cover; border: var(--borde); border-radius: 3px; background: var(--papel); }
 .w-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .w-sello { padding: 5px 10px; border: var(--borde); border-radius: 3px; background: var(--superficie); font-family: var(--f-mono); font-size: 13px; font-weight: 700; text-transform: uppercase; }
 .w-duelo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
