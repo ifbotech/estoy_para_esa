@@ -14,21 +14,21 @@ export const PERSONALIDADES: Record<
   cocina: {
     nombre: "Cocina",
     descripcion: "Mapa, Instagram, barrio y qué pedir (repetir o pasar).",
-    listas: [{ id: "pedir", nombre: "Qué pedir", placeholder: "La milanesa napolitana..." }],
+    listas: [{ id: "pedir", nombre: "Qué pedir", placeholder: "Algo para probar…" }],
     verbo: "ir a comer",
   },
   cafe: {
     nombre: "Café",
     descripcion: "El lugar en el mapa, barrio y qué pedir.",
-    listas: [{ id: "pedir", nombre: "Qué pedir", placeholder: "Flat white y medialuna..." }],
+    listas: [{ id: "pedir", nombre: "Qué pedir", placeholder: "Algo para probar…" }],
     verbo: "ir a tomar algo",
   },
   viaje: {
     nombre: "Viaje",
     descripcion: "Boarding pass, itinerario por día y valija.",
     listas: [
-      { id: "itinerario", nombre: "Itinerario", placeholder: "Día 1: llegar y caminar la rambla..." },
-      { id: "valija", nombre: "Valija", placeholder: "Protector solar..." },
+      { id: "itinerario", nombre: "Itinerario", placeholder: "Qué hacer ese día…" },
+      { id: "valija", nombre: "Valija", placeholder: "Algo para llevar…" },
     ],
     verbo: "viajar",
   },
@@ -36,8 +36,8 @@ export const PERSONALIDADES: Record<
     nombre: "Taller",
     descripcion: "Pasos, materiales y la foto del antes y el después.",
     listas: [
-      { id: "pasos", nombre: "Pasos", placeholder: "Lijar la madera..." },
-      { id: "materiales", nombre: "Materiales", placeholder: "Pintura al agua blanca..." },
+      { id: "pasos", nombre: "Pasos", placeholder: "El próximo paso…" },
+      { id: "materiales", nombre: "Materiales", placeholder: "Algo que haga falta…" },
     ],
     verbo: "hacerlo",
   },

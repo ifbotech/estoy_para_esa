@@ -92,7 +92,7 @@ export function Categorias() {
               </label>
               <label className="campo-etiqueta">
                 <span>Nombre</span>
-                <input className="campo campo-grande" value={editando.nombre} onChange={(e) => setEditando({ ...editando, nombre: e.target.value })} placeholder="Museos" />
+                <input className="campo campo-grande" value={editando.nombre} onChange={(e) => setEditando({ ...editando, nombre: e.target.value })} placeholder="Cómo se llama…" />
               </label>
             </div>
             <label className="campo-etiqueta">

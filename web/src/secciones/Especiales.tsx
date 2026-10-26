@@ -88,7 +88,7 @@ export function SeccionCine({ plan }: { plan: Plan }) {
       <Dato etiqueta={buscando ? "Link de Letterboxd · leyendo…" : "Link de Letterboxd"} valor={d.letterboxd} placeholder="https://letterboxd.com/film/…" tipo="url" onGuardar={conectar} />
       <div className="grid2">
         <Dato etiqueta="Año" valor={d.anio} onGuardar={(v) => editarDatos(plan, { anio: v })} />
-        <Dato etiqueta="Dónde verla" valor={d.dondeVer} placeholder="Mubi, Netflix, cine…" onGuardar={(v) => editarDatos(plan, { dondeVer: v })} />
+        <Dato etiqueta="Dónde verla" valor={d.dondeVer} placeholder="Dónde la dan…" onGuardar={(v) => editarDatos(plan, { dondeVer: v })} />
       </div>
     </Bloque>
   )
@@ -126,9 +126,9 @@ export function SeccionLugar({ plan }: { plan: Plan }) {
           Ver en el mapa
         </button>
       )}
-      <Dato etiqueta="Dirección o nombre del lugar" valor={d.direccion} placeholder="Av. Corrientes 1234" onGuardar={(v) => editarDatos(plan, { direccion: v }).then(() => setMapa(true))} />
+      <Dato etiqueta="Dirección o nombre del lugar" valor={d.direccion} placeholder="Dónde queda…" onGuardar={(v) => editarDatos(plan, { direccion: v }).then(() => setMapa(true))} />
       <div className="grid2">
-        <Dato etiqueta="Barrio" valor={d.barrio} placeholder="Palermo" onGuardar={(v) => editarDatos(plan, { barrio: v })} />
+        <Dato etiqueta="Barrio" valor={d.barrio} placeholder="El barrio…" onGuardar={(v) => editarDatos(plan, { barrio: v })} />
         <Dato etiqueta="Instagram" valor={d.instagram ? "@" + ig : ""} placeholder="@lugar" onGuardar={(v) => editarDatos(plan, { instagram: usuarioInstagram(v) })} />
       </div>
       <Dato etiqueta="Link de Google Maps" valor={d.maps} placeholder="https://maps.app.goo.gl/…" tipo="url" onGuardar={(v) => editarDatos(plan, { maps: v })} />
@@ -198,8 +198,8 @@ export function SeccionViaje({ plan }: { plan: Plan }) {
         </div>
       </div>
       <div className="grid2">
-        <Dato etiqueta="Destino" valor={d.destino} placeholder="Bariloche" onGuardar={(v) => editarDatos(plan, { destino: v })} />
-        <Dato etiqueta="País" valor={d.pais} placeholder="Argentina" onGuardar={(v) => editarDatos(plan, { pais: v, exterior: v ? !/^argentina$/i.test(v.trim()) : d.exterior })} />
+        <Dato etiqueta="Destino" valor={d.destino} placeholder="A dónde van…" onGuardar={(v) => editarDatos(plan, { destino: v })} />
+        <Dato etiqueta="País" valor={d.pais} placeholder="El país…" onGuardar={(v) => editarDatos(plan, { pais: v, exterior: v ? !/^argentina$/i.test(v.trim()) : d.exterior })} />
         <Dato etiqueta="Ida" tipo="date" valor={d.desde} onGuardar={(v) => editarDatos(plan, { desde: v })} />
         <Dato etiqueta="Vuelta" tipo="date" valor={d.hasta} onGuardar={(v) => editarDatos(plan, { hasta: v })} />
       </div>
