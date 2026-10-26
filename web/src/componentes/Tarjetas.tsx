@@ -1,12 +1,15 @@
 import { animate, motion, useMotionValue, useTransform } from "motion/react"
 import { useRef } from "react"
 import { abrirVistaRapida, estoyParaEsa, moverEstado } from "../acciones"
-import { aCiegas, type Rankeado } from "../calculos"
+import { UMBRAL_MATCH_TOTAL, aCiegas, type Rankeado } from "../calculos"
 import { urlArchivo } from "../pb"
 import { ir } from "../router"
-import { useStore, useYo } from "../store"
+import { getEstado, useStore, useYo, votar } from "../store"
 import { ESTADOS, type Categoria, type Plan, type Usuario } from "../tipos"
 import { Arte } from "./Arte"
+import { festejar, vibrar } from "../util/efectos"
+import { sonar } from "../util/sonidos"
+import { avisar } from "./Avisos"
 import { EtiquetaSimetria } from "./Deco"
 
 const DEFECTO = ["#E4572E", "#F5D547"]
@@ -216,6 +219,46 @@ export function TarjetaPlan({ r, puesto, compacta = false, conEstado = false }: 
         </div>
         <PromedioFila r={r} />
       </motion.div>
+    </div>
+  )
+}
+
+const RAPIDOS = [
+  { ganas: 10, cara: "😴", nombre: "Ni ahí" },
+  { ganas: 40, cara: "🙂", nombre: "Puede ser" },
+  { ganas: 75, cara: "🤩", nombre: "Muchas" },
+  { ganas: 100, cara: "🔥", nombre: "¡Para esa!" },
+]
+
+/**
+ * El voto de un toque, pegado abajo de la fila de un plan que todavía no
+ * votaste. Sigue siendo a ciegas: el del otro se destapa recién al tocar.
+ * Para afinar el número está la barra del detalle.
+ */
+export function VotoRapido({ planId }: { planId: string }) {
+  const yo = useYo()
+  const elegir = (ganas: number, e: React.MouseEvent) => {
+    const otro = getEstado().votos.find((v) => v.plan === planId && v.usuario !== yo?.id)
+    if (ganas === 100) void estoyParaEsa(planId, e)
+    else {
+      vibrar(12)
+      sonar("tic")
+      void votar(planId, { ganas })
+    }
+    if (otro && otro.ganas >= UMBRAL_MATCH_TOTAL && ganas >= UMBRAL_MATCH_TOTAL) {
+      festejar(e.clientX / innerWidth, e.clientY / innerHeight, 1.2)
+      avisar("¡MATCH TOTAL! 🔥 Los dos están para esa.")
+    }
+  }
+  return (
+    <div className="voto-rapido" role="group" aria-label="¿Cuántas ganas tenés?">
+      <span className="voto-rapido-pregunta etiqueta">¿ganas?</span>
+      {RAPIDOS.map((o) => (
+        <button key={o.ganas} className="voto-rapido-op" onClick={(e) => elegir(o.ganas, e)} aria-label={`${o.nombre}: ${o.ganas}%`}>
+          <span aria-hidden>{o.cara}</span>
+          <small>{o.nombre}</small>
+        </button>
+      ))}
     </div>
   )
 }

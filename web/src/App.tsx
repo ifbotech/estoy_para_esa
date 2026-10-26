@@ -5,12 +5,12 @@ import { BarraNav } from "./componentes/BarraNav"
 import { EnVivo } from "./componentes/Deco"
 import { NuevoPlan } from "./pantallas/NuevoPlan"
 import { VistaRapida } from "./componentes/VistaRapida"
-import { Hoy } from "./pantallas/Hoy"
 import { Login } from "./pantallas/Login"
 import { Mas } from "./pantallas/Mas"
 import { PlanDetalle } from "./pantallas/PlanDetalle"
 import { Planes } from "./pantallas/Planes"
 import { Recuerdos } from "./pantallas/Recuerdos"
+import { Sumar } from "./pantallas/Sumar"
 import { Wrapped } from "./pantallas/Wrapped"
 import { enArchivo, pb } from "./pb"
 import { useRuta } from "./router"
@@ -22,7 +22,9 @@ export function App() {
   const [logueado, setLogueado] = useState(pb.authStore.isValid)
   const listo = useStore((s) => s.listo)
   const ruta = useRuta()
-  const [nuevo, setNuevo] = useState(false)
+  // la hoja de nuevo plan: cerrada (null) o abierta, con la categoría elegida si la hay
+  const [nuevo, setNuevo] = useState<{ cat?: string } | null>(null)
+  const abrirNuevo = (cat?: string) => setNuevo({ cat })
 
   useEffect(() => {
     if (!logueado) return
@@ -80,7 +82,7 @@ export function App() {
       pantalla = <Mas sub={ruta.partes[1]} />
       break
     default:
-      pantalla = <Hoy onNuevo={() => setNuevo(true)} />
+      pantalla = <Sumar onNuevo={abrirNuevo} />
   }
   const pantallaCompleta = seccion === "wrapped"
   const tab = seccion === "plan" ? "planes" : seccion
@@ -106,8 +108,8 @@ export function App() {
         </motion.main>
       </AnimatePresence>
       {/* en el detalle de un plan, abajo va su barra de acción (ver PlanDetalle) */}
-      {!pantallaCompleta && seccion !== "plan" && <BarraNav actual={tab} onNuevo={() => setNuevo(true)} />}
-      <NuevoPlan abierta={nuevo} onCerrar={() => setNuevo(false)} categoriaInicial={ruta.query.get("cat") ?? undefined} />
+      {!pantallaCompleta && seccion !== "plan" && <BarraNav actual={tab} />}
+      <NuevoPlan abierta={nuevo !== null} onCerrar={() => setNuevo(null)} categoriaInicial={nuevo?.cat ?? ruta.query.get("cat") ?? undefined} />
       <VistaRapida />
       <Avisos />
     </>
