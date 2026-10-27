@@ -96,37 +96,44 @@
 .hilo { position: absolute; z-index: 3; pointer-events: none; }
 .tarjeta-envoltorio > .hilo { right: -6px; bottom: -10px; width: 46px; }
 
-/* --- piedras (Decidir) ------------------------------------------------------ */
-.piedra { position: relative; display: inline-grid; place-items: center; width: var(--pw); height: var(--ph); }
-.piedra-fondo { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.piedra-contenido { position: relative; isolation: isolate; display: grid; justify-items: center; gap: 2px; max-width: 78%; text-align: center; }
-.piedra-mancha { inset: 50% auto auto 50%; width: 150%; height: 190%; translate: -50% -48%; opacity: 0.92; }
-.piedra-texto {
+/* --- Decidir: piedras con cara que se dan vuelta (Piedras.tsx) ------------- */
+.decidir-opciones { gap: 6px; }
+.piedra-gira { position: relative; display: grid; justify-items: center; gap: 2px; padding: 0; perspective: 700px; transition: transform var(--rapido) ease-out; }
+.piedra-gira:active { transform: translate(1px, 2px) rotate(-1.5deg); }
+.piedra-gira:focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; border-radius: 40%; }
+.piedra-cuerpo { position: relative; display: block; width: 100%; aspect-ratio: 160 / 132; transform-style: preserve-3d; transition: transform calc(520ms * var(--mov)) cubic-bezier(0.3, 1.3, 0.5, 1); }
+.piedra-gira.girada .piedra-cuerpo { transform: rotateY(180deg); }
+.piedra-cara { position: absolute; inset: 0; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.piedra-cara svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.piedra-cara.dorso { transform: rotateY(180deg); }
+.piedra-respuesta {
+  position: relative;
+  max-width: 62%;
   font-family: var(--f-display);
   font-weight: 800;
-  font-size: 19px;
-  line-height: 1;
+  line-height: 0.95;
   letter-spacing: -0.03em;
+  text-align: center;
   color: var(--tinta);
-  text-shadow: 0 0 1px var(--tinta);
+  rotate: -5deg;
   overflow-wrap: anywhere;
+  text-shadow: 0 0 1px var(--tinta);
 }
+.piedra-nombre { font-size: 10px; margin-top: -2px; }
+.piedra-gira .opcion-marca { position: absolute; top: 0; right: 4px; rotate: 6deg; }
+/* los ojitos de plástico se sacuden al tocar la piedra */
+.sacudon .pupila { animation: sacudon calc(520ms * var(--mov)) ease-out; }
 
-/* --- Decidir: piedras y la pila de lo decidido ----------------------------- */
-.opcion-piedra { position: relative; display: grid; place-items: center; min-height: 140px; isolation: isolate; transition: transform var(--rapido) ease-out; }
-button.opcion-piedra:active, button.opcion-piedra:focus-visible { transform: translate(2px, 2px) rotate(-1deg); }
-.opcion-piedra .piedra .etiqueta { font-size: 9.5px; color: rgb(18 18 17 / 0.7); }
-.opcion-piedra .opcion-mancha { inset: 50% auto auto 50%; width: 190px; height: 190px; translate: -50% -50%; }
-.opcion-piedra .opcion-marca { position: absolute; top: 2px; right: 6px; rotate: 6deg; }
-.opcion-piedra.tapada .piedra-texto { font-family: var(--f-mono); font-size: 26px; }
+/* la pila de lo decidido */
 .decidir-historial { display: grid; justify-items: center; gap: 10px; margin-top: var(--gap-bloques); }
 .pila { display: flex; flex-direction: column; align-items: center; padding: 0; list-style: none; }
-.pila li { position: relative; translate: var(--corre, 0) 0; }
-.pila li + li { margin-top: -16px; }
-.pila .piedra-contenido { gap: 0; }
-.pila .piedra-texto { font-size: 16px; }
-.pila li { border: 0; padding: 0; }
-.pila-pregunta { font-family: var(--f-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: rgb(18 18 17 / 0.62); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pila li { position: relative; translate: var(--corre, 0) 0; border: 0; padding: 0; }
+.pila li + li { margin-top: -18px; }
+.piedra-chica { position: relative; display: grid; place-items: center; }
+.piedra-chica svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.piedra-chica-texto { position: relative; display: grid; justify-items: center; max-width: 72%; text-align: center; rotate: -3deg; }
+.pila-pregunta { font-family: var(--f-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: rgb(18 18 17 / 0.7); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pila-elegida { font-family: var(--f-display); font-weight: 800; font-size: 17px; line-height: 1; letter-spacing: -0.03em; }
 
 /* --- el subrayado de cada pantalla: un trazo de aerosol en su color ------- */
 .cabeza-pantalla::after {

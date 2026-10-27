@@ -7,6 +7,7 @@ import type { CSSProperties, ReactNode } from "react"
  * montado en App) y se usan por id:
  *   #aerosol   borde áspero + niebla y motas de pintura alrededor
  *   #piedra    textura de piedra con luz de costado
+ *   #ojo-plastico, #piedra-sombra   los ojitos y la sombra de Piedras.tsx
  * Son dibujos quietos: nada se mueve solo.
  */
 
@@ -34,6 +35,17 @@ export function FiltrosAerosol() {
             <feMergeNode in="nucleo" />
           </feMerge>
         </filter>
+        {/* los ojitos de plástico y la sombra de abajo de las piedras (Piedras.tsx) */}
+        <radialGradient id="ojo-plastico" cx="40%" cy="35%" r="70%">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.7" stopColor="#f1efe9" />
+          <stop offset="1" stopColor="#c9c5bb" />
+        </radialGradient>
+        <linearGradient id="piedra-sombra" x1="0" y1="0" x2="0.35" y2="1">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.22" />
+          <stop offset="0.45" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="1" stopColor="#121211" stopOpacity="0.3" />
+        </linearGradient>
         <filter id="piedra" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
           <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="5" seed="12" result="relieve" />
           <feDiffuseLighting in="relieve" surfaceScale="2.6" lightingColor="#ffffff" result="luz">
@@ -125,36 +137,6 @@ export function Mancha({ color, semilla = 1, className = "", style }: { color: s
 }
 
 // --- materia ----------------------------------------------------------------
-
-/**
- * Una piedra con algo pintado encima (como las de las fotos). El contenido va
- * en HTML arriba de la piedra; `ancho` y `alto` son los de la piedra en px.
- */
-export function Piedra({
-  children,
-  semilla = 1,
-  ancho = 150,
-  alto = 120,
-  className = "",
-}: {
-  children?: ReactNode
-  semilla?: number
-  ancho?: number
-  alto?: number
-  className?: string
-}) {
-  const d = contorno(ancho - 8, alto - 8, semilla, 0.16, 12)
-  return (
-    <span className={`piedra ${className}`} style={{ "--pw": `${ancho}px`, "--ph": `${alto}px` } as CSSProperties}>
-      <svg className="piedra-fondo" viewBox={`0 0 ${ancho} ${alto}`} aria-hidden>
-        <ellipse cx={ancho / 2 + 3} cy={alto - 6} rx={ancho * 0.4} ry={5} fill="rgb(18 18 17 / 0.18)" />
-        <path d={d} transform="translate(4 2)" fill="var(--piedra)" filter="url(#piedra)" />
-        <path d={d} transform="translate(4 2)" fill="none" stroke="rgb(18 18 17 / 0.35)" strokeWidth={1.5} />
-      </svg>
-      <span className="piedra-contenido">{children}</span>
-    </span>
-  )
-}
 
 /** Un mechón de hilo de colores que se escapa por un borde: el premio de lo hecho. */
 export function Hilo({ className = "" }: { className?: string }) {
