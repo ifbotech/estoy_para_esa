@@ -10,6 +10,7 @@ import { Arte } from "./Arte"
 import { festejar, vibrar } from "../util/efectos"
 import { sonar } from "../util/sonidos"
 import { avisar } from "./Avisos"
+import { Hilo } from "./Aerosol"
 import { EtiquetaSimetria } from "./Deco"
 
 const DEFECTO = ["#E4572E", "#F5D547"]
@@ -219,6 +220,7 @@ export function TarjetaPlan({ r, puesto, compacta = false, conEstado = false }: 
         </div>
         <PromedioFila r={r} />
       </motion.div>
+      {r.plan.estado === "hecho" && <Hilo />}
     </div>
   )
 }

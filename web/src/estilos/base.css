@@ -1,4 +1,6 @@
-/* Estoy para esa v3 · «Brutalismo editorial».
+/* Estoy para esa v4 · «Hecho a mano» (sobre la base de la v3, «Brutalismo
+   editorial»). Ver v4.css: contornos a mano, aerosol, piedras e hilo.
+   Lo de abajo sigue siendo la v3:
    Un solo sistema, fijo y curado: papel y tinta, bordes de 2 px, sombras
    duras sin desenfoque, radio de 6 px en todo, números en monoespaciada.
    Lo que se toca se hunde (:active). Nada se mueve solo.
@@ -6,22 +8,25 @@
 
 :root {
   /* papel y tinta */
-  --papel: #F5F2E8;
-  --superficie: #FFFDF9;
+  --papel: #F7F4ED;
+  --superficie: #FFFEFB;
   --tinta: #121211;
   --suave: #55524B;
   --rayita: rgb(18 18 17 / 0.18);
 
   /* acentos planos, con propósito */
-  --amarillo: #F5D547; /* acción principal */
-  --verde: #8FD694;    /* hecho, completo, repetir */
-  --rojo: #E4572E;     /* match, peligro */
-  --azul: #8DB4E2;     /* viajes, info */
-  --rosa: #F2B8C6;     /* recuerdos, pasar */
-  --lila: #B9A7E8;     /* por amor al arte */
+  /* v4: la paleta de cartel (Dröm), plana y saturada */
+  --amarillo: #FFD93B; /* acción principal */
+  --verde: #5FD38D;    /* hecho, completo, repetir */
+  --rojo: #FF5032;     /* match, peligro */
+  --azul: #8EAEFF;     /* viajes, info */
+  --rosa: #FFB3CB;     /* pasar */
+  --lila: #C3A0FF;     /* por amor al arte, decidir */
+  --artaud: #3F8F3A;   /* el verde del ícono */
+  --piedra: #A8A293;   /* las piedras de Decidir */
 
   --radio: 6px;
-  --borde: 2px solid var(--tinta);
+  --borde: 2.5px solid var(--tinta);
   --sombra: 3px 3px 0 var(--tinta);
   --sombra-chica: 2px 2px 0 var(--tinta);
   --toque: 44px;

@@ -37,8 +37,8 @@ export function Login({ onEntrar }: { onEntrar: () => void }) {
     <main className="login">
       <div className="login-ficha">
         <header className="login-cabeza">
-          <span className="login-marca">ESTOY PARA ESA <Globos /></span>
-          <span className="etiqueta num">v3</span>
+          <span className="login-marca"><span className="marca-cuadro"><Globos tam={22} /></span> estoy para esa</span>
+          <span className="etiqueta num">v4</span>
         </header>
         <div className="login-arte" aria-hidden>
           <Arte tipo="salida" tam={9} />

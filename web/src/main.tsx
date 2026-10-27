@@ -2,6 +2,7 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { registerSW } from "virtual:pwa-register"
 import { App } from "./App"
+import { FiltrosAerosol } from "./componentes/Aerosol"
 import { enArchivo } from "./pb"
 import "@fontsource-variable/bricolage-grotesque/standard.css"
 import "@fontsource-variable/dm-sans"
@@ -10,8 +11,9 @@ import "@fontsource/space-mono/700.css"
 import "./estilos/base.css"
 import "./estilos/arte.css"
 import "./estilos/pantallas.css"
+import "./estilos/v4.css"
 
-// El diseño es fijo (v3): los tokens viven en :root, en base.css. El tema
+// El diseño es fijo (v4, sobre la v3): los tokens viven en :root, en base.css. El tema
 // que quedó guardado de versiones anteriores ya no se usa.
 try {
   localStorage.removeItem("epe_tema")
@@ -47,6 +49,7 @@ if (!enArchivo && window.top === window && "serviceWorker" in navigator) {
 
 createRoot(document.getElementById("app")!).render(
   <StrictMode>
+    <FiltrosAerosol />
     <App />
   </StrictMode>,
 )

@@ -386,7 +386,7 @@
 .pregunta-estado { font-size: 14px; font-weight: 600; color: var(--suave); }
 .pregunta-responder { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .pregunta-pista { font-family: var(--f-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; perspective: 600px; }
+.decidir-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; perspective: 600px; }
 .opcion-carta { position: relative; display: grid; align-content: start; gap: 6px; min-height: 110px; padding: 10px; border: var(--borde); border-radius: var(--radio); background: var(--papel); box-shadow: var(--sombra-chica); text-align: left; transition: transform var(--rapido) ease-out, box-shadow var(--rapido) ease-out, background-color var(--rapido); }
 button.opcion-carta:active, button.opcion-carta:focus-visible { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--tinta); }
 .opcion-carta .etiqueta { display: inline-flex; align-items: center; gap: 6px; }
@@ -401,11 +401,6 @@ button.opcion-carta:active, button.opcion-carta:focus-visible { transform: trans
 .pregunta-otra.elegida, .pregunta-otra:active { background: var(--rosa); border-style: solid; }
 .pregunta-decidida { display: grid; justify-items: start; gap: 8px; }
 .pregunta-elegida { font-family: var(--f-display); font-weight: 800; font-size: clamp(28px, 9vw, 40px); line-height: 0.95; text-transform: uppercase; font-stretch: 80%; font-variation-settings: "wdth" 80; overflow-wrap: anywhere; }
-.decidir-historial ul { display: grid; gap: 0; }
-.decidir-historial li { display: grid; gap: 2px; padding: 8px 0; border-top: 2px dashed var(--rayita); }
-.decidir-historial li:first-child { border-top: 0; padding-top: 0; }
-.decidir-historial li span { font-size: 13px; color: var(--suave); }
-.decidir-historial li b { font-size: 16px; }
 
 /* --- wrapped -------------------------------------------------------------- */
 .wrapped { position: fixed; inset: 0; z-index: 50; overflow: hidden; color: var(--tinta); background: var(--papel); }
