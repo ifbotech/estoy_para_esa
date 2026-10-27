@@ -39,59 +39,77 @@ function moneda(preguntaId, ronda) {
  */
 function resolver(app, respuesta, autor) {
   const u = require(`${__hooks}/util.js`)
-  let p
-  try {
-    p = app.findRecordById("preguntas", respuesta.getString("pregunta"))
-  } catch (_) {
-    return
-  }
   const ronda = respuesta.getInt("ronda")
-  if (p.getString("estado") !== "abierta" || p.getInt("ronda") !== ronda) return
-  const todas = deLaRonda(app, p.id, ronda)
-  if (todas.length < 2) return
+
+  // Se decide adentro de una transacción: si los dos eligen casi a la vez,
+  // el segundo ya ve la pregunta resuelta y no la vuelve a resolver (ni
+  // manda el aviso de «¡decidido!» dos veces).
+  let r = null
+  app.runInTransaction((tx) => {
+    let p
+    try {
+      p = tx.findRecordById("preguntas", respuesta.getString("pregunta"))
+    } catch (_) {
+      return
+    }
+    if (p.getString("estado") !== "abierta" || p.getInt("ronda") !== ronda) return
+    const todas = deLaRonda(tx, p.id, ronda)
+    if (todas.length < 2) return
+    r = { id: p.id, titulo: p.getString("texto") }
+
+    const elecciones = todas.map((x) => x.getString("elige"))
+    if (elecciones.some((x) => !x)) {
+      r.tipo = "falta"
+      return
+    }
+    if (elecciones.includes("otra")) {
+      p.set("ronda", ronda + 1)
+      p.set("respondieron", [])
+      tx.save(p)
+      r.tipo = "otra"
+      return
+    }
+    let ganadora
+    let desempate = false
+    if (elecciones[0] === elecciones[1]) ganadora = todas.find((x) => x.id === elecciones[0])
+    else {
+      desempate = true
+      ganadora = todas.find((x) => x.id === elecciones[moneda(p.id, ronda)])
+    }
+    if (!ganadora) {
+      r = null
+      return
+    }
+    p.set("estado", "decidida")
+    p.set("elegida", ganadora.getString("texto"))
+    p.set("desempate", desempate)
+    p.set("decidida_en", new DateTime())
+    tx.save(p)
+    r.tipo = "decidida"
+    r.elegida = ganadora.getString("texto")
+    r.desempate = desempate
+  })
+  if (!r) return
+
   const quien = u.nombre(app, autor)
-  const titulo = p.getString("texto")
-  const base = { url: "#/decidir", tag: `decidir-${p.id}` }
-
-  const elecciones = todas.map((x) => x.getString("elige"))
-  if (elecciones.some((x) => !x)) {
-    u.notificar(app, autor, { ...base, title: `${quien} ya eligió 👀`, body: `«${titulo}». Falta lo tuyo.` })
-    return
+  const base = { url: "#/decidir", tag: `decidir-${r.id}` }
+  if (r.tipo === "falta") {
+    u.notificar(app, autor, { ...base, title: `${quien} ya eligió 👀`, body: `«${r.titulo}». Falta lo tuyo.` })
+  } else if (r.tipo === "otra") {
+    u.notificar(app, "", { ...base, title: "🔁 Otra ronda", body: `«${r.titulo}»: ninguna tentó. Cada uno pone una opción nueva.` })
+  } else {
+    require(`${__hooks}/actividad.js`).registrar(app, "decidido", null, autor, {
+      pregunta: r.titulo,
+      elegida: r.elegida,
+      rondas: ronda,
+      desempate: r.desempate,
+    })
+    u.notificar(app, "", {
+      ...base,
+      title: r.desempate ? "🪙 Lo decidió la moneda" : "✅ ¡Decidido!",
+      body: `«${r.titulo}»: ${r.elegida}`,
+    })
   }
-
-  if (elecciones.includes("otra")) {
-    p.set("ronda", ronda + 1)
-    p.set("respondieron", [])
-    app.save(p)
-    u.notificar(app, "", { ...base, title: "🔁 Otra ronda", body: `«${titulo}»: ninguna tentó. Cada uno pone una opción nueva.` })
-    return
-  }
-
-  let ganadora
-  let desempate = false
-  if (elecciones[0] === elecciones[1]) ganadora = todas.find((x) => x.id === elecciones[0])
-  else {
-    desempate = true
-    ganadora = todas.find((x) => x.id === elecciones[moneda(p.id, ronda)])
-  }
-  if (!ganadora) return
-  p.set("estado", "decidida")
-  p.set("elegida", ganadora.getString("texto"))
-  p.set("desempate", desempate)
-  p.set("decidida_en", new DateTime())
-  app.save(p)
-
-  require(`${__hooks}/actividad.js`).registrar(app, "decidido", null, autor, {
-    pregunta: titulo,
-    elegida: ganadora.getString("texto"),
-    rondas: ronda,
-    desempate,
-  })
-  u.notificar(app, "", {
-    ...base,
-    title: desempate ? "🪙 Lo decidió la moneda" : "✅ ¡Decidido!",
-    body: `«${titulo}»: ${ganadora.getString("texto")}`,
-  })
 }
 
 /** Avisos al responder: que falta el otro, o que ya se puede elegir. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   accionPrincipal, aCiegas, decisionesPendientes, estadoDecision, barriosConquistados, candidatosSorteo, curaduriaPelis, demorasRodillo, esMatchTotal, momentum,
-  numerosActividad, promedioGanas, rachaMaxima, rankear, resumenAnual, resumenPeriodo, sellado, simetria, sortear,
+  numerosActividad, promedioGanas, rachaMaxima, rankear, periodoAnual, resumenPeriodo, sellado, simetria, sortear,
 } from "./calculos"
 import type { Actividad, Categoria, Pregunta, Respuesta, Item, Lista, Plan, Usuario, Voto } from "./tipos"
 
@@ -253,7 +253,7 @@ describe("wrapped", () => {
     ]
     const votos = [voto("peli1", "i", 90, 4.5), voto("peli1", "r", 30, 3), voto("peli2", "i", 60, 5)]
     const items: Item[] = []
-    const r = resumenAnual(2026, planes, votos, categorias, items)
+    const r = resumenPeriodo(periodoAnual(2026), planes, votos, categorias, items)
     expect(r.total).toBe(4)
     expect(r.porCategoria[0].categoria.id).toBe("c-cine")
     expect(r.porCategoria[0].pct).toBe(50)

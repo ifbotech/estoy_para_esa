@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react"
-import { avisar } from "../componentes/Avisos"
+import { useState } from "react"
 import { Boton } from "../componentes/Controles"
 import { Bloque } from "../componentes/Deco"
 import { colorDe } from "../componentes/Tarjetas"
@@ -7,8 +6,8 @@ import { BASE } from "../pb"
 import { editarPerfil, terminar, useStore, useYo } from "../store"
 import versiones from "../versiones.json"
 import { prenderSonidos, sonidosPrendidos } from "../util/sonidos"
-import { activarPush, desactivarPush, esIOSSinInstalar, probarPush, pushDisponible, suscripcionActual } from "../util/push"
 import { Archivo } from "./mas/Archivo"
+import { Avisos } from "./mas/Avisos"
 import { Categorias } from "./mas/Categorias"
 import { Letterboxd } from "./mas/Letterboxd"
 
@@ -19,7 +18,7 @@ import { Letterboxd } from "./mas/Letterboxd"
 const OPCIONES = [
   { id: "categorias", num: "01", titulo: "Categorías", texto: "Crear, renombrar, ordenar y elegirles personalidad." },
   { id: "letterboxd", num: "02", titulo: "Letterboxd", texto: "Traer su diario y marcar como vistas las pelis de la lista." },
-  { id: "avisos", num: "03", titulo: "Avisos", texto: "Notificaciones cuando el otro suma, vota o puntúa." },
+  { id: "avisos", num: "03", titulo: "Avisos", texto: "Notificaciones de todo lo que pasa: planes, ganas, Decidir, recordatorios." },
   { id: "archivo", num: "04", titulo: "Archivo de versiones", texto: "Todas las versiones de la app, para volver a mirarlas." },
 ]
 
@@ -122,58 +121,6 @@ function Cuenta() {
           Cerrar sesión
         </Boton>
       </div>
-    </Bloque>
-  )
-}
-
-function Avisos() {
-  const [activo, setActivo] = useState<boolean | null>(null)
-  const [ocupado, setOcupado] = useState(false)
-  useEffect(() => {
-    suscripcionActual().then((s) => setActivo(Boolean(s)))
-  }, [])
-
-  if (esIOSSinInstalar())
-    return (
-      <Bloque titulo="En iPhone">
-        <p>Los avisos andan con la app agregada a la pantalla de inicio. Abrila en Safari → Compartir → Agregar a inicio, y activalos desde ahí.</p>
-      </Bloque>
-    )
-  if (!pushDisponible())
-    return (
-      <Bloque titulo="No disponible">
-        <p>Este navegador no soporta avisos.</p>
-      </Bloque>
-    )
-  return (
-    <Bloque titulo="Avisos de este teléfono" accion={<span className="num">{activo ? "ON" : "OFF"}</span>}>
-      <label className="interruptor">
-        <span>Avisarme cuando el otro suma un plan, vota (a ciegas, sin el número) o puntúa</span>
-        <input
-          type="checkbox"
-          checked={Boolean(activo)}
-          disabled={ocupado || activo === null}
-          onChange={async (e) => {
-            setOcupado(true)
-            if (e.target.checked) {
-              const r = await activarPush()
-              if (r === "ok") {
-                setActivo(true)
-                avisar("Avisos activados 🔔")
-              } else avisar(r === "denegado" ? "El teléfono no dio permiso 🙈" : "No se pudieron activar", "error")
-            } else {
-              await desactivarPush()
-              setActivo(false)
-            }
-            setOcupado(false)
-          }}
-        />
-      </label>
-      {activo && (
-        <Boton variante="secundario" className="boton-chico" onClick={() => probarPush().then(() => avisar("Mandé un aviso de prueba 📨"))}>
-          Mandar uno de prueba
-        </Boton>
-      )}
     </Bloque>
   )
 }

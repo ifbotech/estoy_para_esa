@@ -2,8 +2,9 @@
 // (../pb), la app web servida desde pb_public y dos cosas que PocketBase no
 // trae de fábrica:
 //
-//   - $epe.webpush(...) para los hooks: manda avisos push firmados con VAPID
-//     (las claves se generan solas la primera vez, en pb_data/vapid.json).
+//   - $epe.notificar / $epe.notificarA / $epe.probarPush para los hooks:
+//     avisos push firmados con VAPID, mandados en segundo plano (las claves
+//     se generan solas la primera vez, en pb_data/vapid.json). Ver push.go.
 //   - el comando `usuario`, para crear o actualizar a Iñaki y a Rocío desde
 //     la consola del VPS sin abrir el panel de administración.
 package main
@@ -45,6 +46,9 @@ func main() {
 		OnInit: func(vm *goja.Runtime) {
 			vm.Set("$epe", map[string]any{
 				"webpush":        push.send,
+				"notificar":      push.notificar,
+				"notificarA":     push.notificarA,
+				"probarPush":     push.probar,
 				"vapidPublicKey": push.publicKey,
 			})
 		},

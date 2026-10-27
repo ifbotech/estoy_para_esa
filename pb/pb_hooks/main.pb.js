@@ -13,43 +13,34 @@ onRecordCreateRequest((e) => {
 
   const u = require(`${__hooks}/util.js`)
   const quien = u.nombre(e.app, e.auth ? e.auth.id : "")
+  const f = require(`${__hooks}/avisos.js`).fechaAR(e.record.getString("cuando"))
+  const para = e.record.getString("estado") === "agendado" && f ? ` para el ${f.dia} a las ${f.hora}` : ""
   u.notificar(e.app, e.auth ? e.auth.id : "", {
-    title: "Plancito nuevo ✨",
-    body: `${quien} sumó «${e.record.getString("titulo")}». ¿Cuántas ganas tenés?`,
+    title: "✨ Plancito nuevo",
+    body: `${quien} sumó «${e.record.getString("titulo")}»${para}. ¿Cuántas ganas tenés? (se vota a ciegas)`,
     url: `#/plan/${e.record.id}`,
     tag: `plan-${e.record.id}`,
   })
 }, "planes")
 
 onRecordUpdateRequest((e) => {
-  const antes = e.record.original().getString("estado")
-  const fotosAntes = e.record.original().getStringSlice("fotos").length
+  const o = e.record.original()
+  const antes = { estado: o.getString("estado"), cuando: o.getString("cuando"), fotos: o.getStringSlice("fotos").length }
   e.next()
   const ahora = e.record.getString("estado")
   const autor = e.auth ? e.auth.id : ""
   const a = require(`${__hooks}/actividad.js`)
   const fotos = e.record.getStringSlice("fotos").length
-  if (fotos > fotosAntes) a.registrar(e.app, "fotos", e.record, autor, { cantidad: fotos - fotosAntes })
-  if (antes === ahora) return
-  a.registrar(e.app, ahora === "idea" ? "a_idea" : ahora, e.record, autor, { antes })
-
-  const u = require(`${__hooks}/util.js`)
-  const quien = u.nombre(e.app, e.auth ? e.auth.id : "")
-  const titulo = e.record.getString("titulo")
-  const textos = {
-    agendado: [`📅 Agendado`, `${quien} agendó «${titulo}».`],
-    en_curso: [`🚧 Arrancaron`, `«${titulo}» está en curso.`],
-    hecho: [`🎉 ¡Lo hicieron!`, `«${titulo}» ya es un recuerdo. ¿Qué tal estuvo?`],
-    idea: [`💡 De vuelta a idea`, `«${titulo}» volvió a la lista de ideas.`],
-  }
-  const [title, body] = textos[ahora] || ["Cambio de plan", titulo]
-  u.notificar(e.app, e.auth ? e.auth.id : "", { title, body, url: `#/plan/${e.record.id}`, tag: `plan-${e.record.id}` })
+  if (fotos > antes.fotos) a.registrar(e.app, "fotos", e.record, autor, { cantidad: fotos - antes.fotos })
+  if (antes.estado !== ahora) a.registrar(e.app, ahora === "idea" ? "a_idea" : ahora, e.record, autor, { antes: antes.estado })
+  require(`${__hooks}/avisos.js`).planCambiado(e.app, e.record, antes, autor)
 }, "planes")
 
 onRecordDeleteRequest((e) => {
   const plan = e.record
   e.next()
   require(`${__hooks}/actividad.js`).registrar(e.app, "borrado", plan, e.auth ? e.auth.id : "", { estado: plan.getString("estado") })
+  require(`${__hooks}/avisos.js`).planBorrado(e.app, plan, e.auth ? e.auth.id : "")
 }, "planes")
 
 // hecho_en lo pone el servidor: es lo que usan los recuerdos y el Wrapped.
@@ -85,10 +76,15 @@ onRecordUpdateRequest((e) => {
   const antes = { ganas: o.getFloat("ganas"), puntaje: o.getFloat("puntaje"), resena: o.getString("resena") }
   e.next()
   require(`${__hooks}/actividad.js`).voto(e.app, e.record, antes)
-  require(`${__hooks}/votos.js`).avisar(e, antes.ganas, antes.puntaje, false)
+  require(`${__hooks}/votos.js`).avisar(e, antes.ganas, antes.puntaje, false, antes.resena)
 }, "votos")
 
 // --- ítems: cada paso tachado (valija, proyecto, itinerario) va al diario ---
+
+onRecordCreateRequest((e) => {
+  e.next()
+  require(`${__hooks}/avisos.js`).itemNuevo(e.app, e.record, e.auth ? e.auth.id : "")
+}, "items")
 
 onRecordUpdateRequest((e) => {
   const antes = e.record.original().getBool("hecho")
@@ -97,7 +93,15 @@ onRecordUpdateRequest((e) => {
   const a = require(`${__hooks}/actividad.js`)
   const plan = a.planDe(e.app, e.record)
   if (plan) a.registrar(e.app, "item_hecho", plan, e.auth ? e.auth.id : "", { lista: e.record.getString("lista"), texto: e.record.getString("texto") })
+  require(`${__hooks}/avisos.js`).itemHecho(e.app, e.record, e.auth ? e.auth.id : "")
 }, "items")
+
+// --- categorías ---------------------------------------------------------------
+
+onRecordCreateRequest((e) => {
+  e.next()
+  require(`${__hooks}/avisos.js`).categoriaNueva(e.app, e.record, e.auth ? e.auth.id : "")
+}, "categorias")
 
 // --- Decidir: preguntas y respuestas a ciegas ------------------------------
 
@@ -130,6 +134,36 @@ onRecordUpdateRequest((e) => {
   e.next()
   if (e.record.getString("elige") && e.record.getString("elige") !== antes) d.resolver(e.app, e.record, e.auth ? e.auth.id : "")
 }, "respuestas")
+
+// --- avisos: un teléfono, una cuenta -----------------------------------------
+
+// Si en un teléfono cambian de cuenta, la suscripción pasa a la cuenta nueva
+// (el endpoint es único: sin esto, el teléfono seguiría recibiendo los avisos
+// de la otra persona y no los propios).
+onRecordCreateRequest((e) => {
+  try {
+    const vieja = e.app.findFirstRecordByData("push_subs", "endpoint", e.record.getString("endpoint"))
+    if (vieja.getString("usuario") !== e.record.getString("usuario")) e.app.delete(vieja)
+  } catch (_) {}
+  e.next()
+}, "push_subs")
+
+// --- recordatorios (hora de acá = UTC−3) ---------------------------------------
+
+// «⏰ En un rato»: los planes agendados que empiezan dentro de la próxima hora.
+cronAdd("avisos-recordatorios", "*/10 * * * *", () => {
+  require(`${__hooks}/avisos.js`).recordatorios($app)
+})
+
+// «☀️ Hoy hay plan», a las 9:30.
+cronAdd("avisos-hoy", "30 12 * * *", () => {
+  require(`${__hooks}/avisos.js`).resumenDelDia($app)
+})
+
+// A las 20:00, a cada uno lo que espera algo de él (Decidir, ganas).
+cronAdd("avisos-empujoncitos", "0 23 * * *", () => {
+  require(`${__hooks}/avisos.js`).empujoncitos($app)
+})
 
 // --- Wrapped: a mitad y a fin de año (12:00 UTC = 9 de la mañana acá) -------
 
@@ -184,16 +218,50 @@ routerAdd("GET", "/api/epe/push/clave", (e) => {
   return e.json(200, { clave: $epe.vapidPublicKey() })
 })
 
+// Manda un aviso de prueba a todos tus teléfonos y devuelve cómo le fue a
+// cada uno (lo usa Más → Avisos).
 routerAdd("POST", "/api/epe/push/probar", (e) => {
-  const subs = e.app.findRecordsByFilter("push_subs", "usuario = {:u}", "", 20, 0, { u: e.auth.id })
-  const res = subs.map((s) => $epe.webpush(JSON.stringify(s.get("suscripcion")), JSON.stringify({
+  const res = $epe.probarPush(e.auth.id, JSON.stringify({
     title: "¡Estoy para esa! 🙌",
-    body: "Los avisos andan perfecto en este teléfono.",
-    url: "#/",
+    body: "Los avisos andan en este teléfono.",
+    url: "#/mas/avisos",
     tag: "prueba",
-  })))
-  return e.json(200, { enviados: res.length, resultados: res })
+  }))
+  return e.json(200, { enviados: res.length, ok: res.filter((r) => r.ok).length, resultados: res })
 }, $apis.requireAuth())
+
+// Para probar los recordatorios sin esperar al reloj (sólo desde el panel de
+// datos): POST {"cual": "recordatorios" | "hoy" | "empujoncitos"}.
+routerAdd("POST", "/api/epe/avisos/correr", (e) => {
+  const a = require(`${__hooks}/avisos.js`)
+  const cual = (e.requestInfo().body || {}).cual
+  if (cual === "recordatorios") a.recordatorios(e.app)
+  else if (cual === "hoy") a.resumenDelDia(e.app)
+  else if (cual === "empujoncitos") a.empujoncitos(e.app)
+  else return e.json(400, { error: "cual: recordatorios, hoy o empujoncitos" })
+  return e.json(200, { ok: true, cual })
+}, $apis.requireSuperuserAuth())
+
+// Cuando el navegador renueva la suscripción por su cuenta
+// (pushsubscriptionchange), el service worker avisa acá. No hay sesión en el
+// service worker: alcanza con conocer el endpoint viejo, que es secreto.
+routerAdd("POST", "/api/epe/push/renovar", (e) => {
+  const b = e.requestInfo().body || {}
+  const nueva = b.nueva || {}
+  if (!b.viejo || !nueva.endpoint || !nueva.keys) return e.json(400, { error: "faltan datos" })
+  let sub
+  try {
+    sub = e.app.findFirstRecordByData("push_subs", "endpoint", String(b.viejo))
+  } catch (_) {
+    return e.json(404, { error: "no la conozco" })
+  }
+  sub.set("endpoint", String(nueva.endpoint))
+  sub.set("suscripcion", nueva)
+  sub.set("fallos", 0)
+  sub.set("ultimo_error", "")
+  e.app.save(sub)
+  return e.json(200, { ok: true })
+})
 
 // Vista previa de un link: título, imagen y descripción (Open Graph). La usan
 // las pelis (Letterboxd), los lugares y cualquier link que se pegue.

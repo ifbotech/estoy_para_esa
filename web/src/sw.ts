@@ -72,3 +72,95 @@ self.addEventListener("activate", (e) => {
     for (const v of ventanas) v.navigate(v.url).catch(() => null)
   })
 })
+
+// --- avisos push -------------------------------------------------------------
+//
+// Cada push tiene que terminar en una notificación visible: si no, iOS da de
+// baja la suscripción después de unos pocos. El contenido lo arma el servidor
+// (pb/pb_hooks/avisos.js): { title, body, url, tag }.
+
+interface AvisoPush {
+  title?: string
+  body?: string
+  url?: string
+  tag?: string
+}
+
+self.addEventListener("push", (e) => {
+  let d: AvisoPush = {}
+  try {
+    d = e.data?.json() ?? {}
+  } catch {
+    d = { body: e.data?.text() }
+  }
+  const opciones: NotificationOptions & { renotify?: boolean; timestamp?: number } = {
+    body: d.body || "",
+    icon: "iconos/icono-192.png",
+    badge: "iconos/insignia-96.png",
+    lang: "es-AR",
+    data: { url: d.url || "#/" },
+  }
+  if (d.tag) {
+    // el aviso nuevo de un mismo tema reemplaza al anterior, pero vuelve a sonar
+    opciones.tag = d.tag
+    opciones.renotify = true
+  }
+  opciones.timestamp = Date.now()
+  e.waitUntil(self.registration.showNotification(d.title || "Estoy para esa", opciones))
+})
+
+// Tocar un aviso abre la app justo en lo que cuenta: si ya estaba abierta, la
+// trae al frente y cambia de pantalla sin recargar.
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close()
+  const hash = String(e.notification.data?.url || "#/")
+  const destino = new URL(`./${hash}`, self.registration.scope).href
+  e.waitUntil(
+    (async () => {
+      const ventanas = await self.clients.matchAll({ type: "window", includeUncontrolled: true })
+      for (const v of ventanas) {
+        if (v.url.startsWith(self.registration.scope) && !v.url.includes("/archivo/")) {
+          const w = await (v as WindowClient).focus().catch(() => v as WindowClient)
+          w.postMessage({ tipo: "abrir", hash })
+          return
+        }
+      }
+      await self.clients.openWindow(destino)
+    })(),
+  )
+})
+
+// El navegador a veces renueva la suscripción por su cuenta: se la avisamos
+// al servidor con el endpoint viejo (el service worker no tiene sesión).
+interface CambioSuscripcion extends ExtendableEvent {
+  oldSubscription?: PushSubscription | null
+  newSubscription?: PushSubscription | null
+}
+
+function bytesDeClave(base64: string) {
+  const relleno = "=".repeat((4 - (base64.length % 4)) % 4)
+  const b = atob((base64 + relleno).replace(/-/g, "+").replace(/_/g, "/"))
+  return Uint8Array.from(b, (c) => c.charCodeAt(0))
+}
+
+self.addEventListener("pushsubscriptionchange", (ev) => {
+  const e = ev as CambioSuscripcion
+  e.waitUntil(
+    (async () => {
+      const api = (ruta: string) => new URL(`api/epe/push/${ruta}`, self.registration.scope).href
+      let nueva = e.newSubscription ?? null
+      if (!nueva) {
+        const { clave } = await fetch(api("clave")).then((r) => r.json())
+        nueva = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: bytesDeClave(clave) })
+      }
+      if (!e.oldSubscription) return
+      await fetch(api("renovar"), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ viejo: e.oldSubscription.endpoint, nueva: nueva.toJSON() }),
+      })
+    })().catch(() => {
+      // si falla, la app la vuelve a registrar la próxima vez que se abre
+    }),
+  )
+})

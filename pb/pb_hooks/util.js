@@ -11,24 +11,28 @@ function nombre(app, userId) {
 }
 
 /**
- * Manda un aviso push a todas las cuentas menos `excepto` (la que hizo el
- * cambio). Las suscripciones vencidas (404/410) se borran solas.
+ * Manda un aviso push a todos los teléfonos menos los de `excepto` (quien
+ * hizo el cambio). Sale en segundo plano desde Go (server/push.go): no frena
+ * la respuesta, manda a cada teléfono en paralelo, anota cómo le fue y borra
+ * las suscripciones vencidas.
+ *
+ * `aviso`: { title, body, url, tag } y, si hace falta, ttl (segundos) y
+ * urgencia ("high" por defecto, "normal", "low").
  */
 function notificar(app, excepto, aviso) {
-  let subs = []
   try {
-    subs = app.findRecordsByFilter("push_subs", "usuario != {:u}", "", 50, 0, { u: excepto || "" })
-  } catch (_) {
-    return
+    $epe.notificar(excepto || "", JSON.stringify(aviso))
+  } catch (err) {
+    app.logger().warn("no se pudo mandar el aviso", "error", String(err))
   }
-  const payload = JSON.stringify(aviso)
-  for (const sub of subs) {
-    const res = $epe.webpush(JSON.stringify(sub.get("suscripcion")), payload)
-    if (res.status === 404 || res.status === 410) {
-      try { app.delete(sub) } catch (_) {}
-    } else if (res.error) {
-      app.logger().warn("push fallido", "error", res.error, "status", res.status)
-    }
+}
+
+/** Lo mismo, pero sólo a los teléfonos de `usuario`. */
+function notificarA(app, usuario, aviso) {
+  try {
+    $epe.notificarA(usuario || "", JSON.stringify(aviso))
+  } catch (err) {
+    app.logger().warn("no se pudo mandar el aviso", "error", String(err))
   }
 }
 
@@ -70,4 +74,4 @@ function traer(url) {
   })
 }
 
-module.exports = { nombre, notificar, meta, decodificar, urlPublica, traer }
+module.exports = { nombre, notificar, notificarA, meta, decodificar, urlPublica, traer }

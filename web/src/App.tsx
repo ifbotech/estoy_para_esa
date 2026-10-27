@@ -15,8 +15,9 @@ import { Sumar } from "./pantallas/Sumar"
 import { Wrapped } from "./pantallas/Wrapped"
 import { enArchivo, pb } from "./pb"
 import { ir, useRuta } from "./router"
-import { iniciar, useStore } from "./store"
-import { momentum } from "./calculos"
+import { iniciar, useStore, useYo } from "./store"
+import { decisionesPendientes } from "./calculos"
+import { asegurarPush } from "./util/push"
 import { volver } from "./router"
 import { marcarWrapVisto, traerWrap, wrapVisto } from "./wrap"
 
@@ -51,6 +52,26 @@ export function App() {
       }
     })
   }, [listo])
+
+  // Avisos push: se revisan (y se arreglan solos) al abrir la app y cada vez
+  // que vuelve a primer plano. Si tocan un aviso con la app abierta, el
+  // service worker pide cambiar de pantalla sin recargar.
+  useEffect(() => {
+    if (!listo || enArchivo) return
+    void asegurarPush()
+    const alVolver = () => document.visibilityState === "visible" && void asegurarPush()
+    const alMensaje = (ev: MessageEvent) => {
+      if (ev.data?.tipo === "abrir" && typeof ev.data.hash === "string") location.hash = ev.data.hash.replace(/^#/, "")
+    }
+    document.addEventListener("visibilitychange", alVolver)
+    navigator.serviceWorker?.addEventListener("message", alMensaje)
+    return () => {
+      document.removeEventListener("visibilitychange", alVolver)
+      navigator.serviceWorker?.removeEventListener("message", alMensaje)
+    }
+  }, [listo])
+
+  useNumeritoDelIcono()
 
   useEffect(() => pb.authStore.onChange(() => setLogueado(pb.authStore.isValid)), [])
 
@@ -136,11 +157,37 @@ export function App() {
 
 const NOMBRES: Record<string, string> = { planes: "Planes", mas: "Más", plan: "Plan" }
 
+/**
+ * El numerito en el ícono de la app (iPhone y Android, con la app instalada):
+ * lo que espera algo de vos, planes sin tus ganas y preguntas de Decidir.
+ */
+function useNumeritoDelIcono() {
+  const listo = useStore((s) => s.listo)
+  const planes = useStore((s) => s.planes)
+  const votos = useStore((s) => s.votos)
+  const preguntas = useStore((s) => s.preguntas)
+  const respuestas = useStore((s) => s.respuestas)
+  const yo = useYo()
+  const n = useMemo(() => {
+    if (!yo) return 0
+    const sinGanas = planes.filter((p) => p.estado !== "hecho" && !votos.some((v) => v.plan === p.id && v.usuario === yo.id)).length
+    return sinGanas + decisionesPendientes(preguntas, respuestas, yo.id)
+  }, [planes, votos, preguntas, respuestas, yo])
+  useEffect(() => {
+    if (!listo || enArchivo) return
+    const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> }
+    if (!nav.setAppBadge) return
+    void (n ? nav.setAppBadge(n) : (nav.clearAppBadge?.() ?? nav.setAppBadge(0))).catch(() => {})
+  }, [n, listo])
+}
+
 /** La barra de arriba: la marca (o volver en las internas), el en vivo y lo hecho. */
 function BarraSuperior({ seccion, sub }: { seccion: string; sub?: string }) {
   const planes = useStore((s) => s.planes)
   const conectado = useStore((s) => s.conectado)
-  const m = useMemo(() => momentum(planes), [planes])
+  // Lo mismo que cuenta Sumar y la pestaña «Hecho» de Planes: todo lo marcado
+  // como hecho, tenga o no fecha (los importados viejos pueden no tenerla).
+  const hechos = useMemo(() => planes.filter((p) => p.estado === "hecho").length, [planes])
   const interna = seccion === "plan" || (seccion === "mas" && sub)
   return (
     <header className="barra">
@@ -156,7 +203,7 @@ function BarraSuperior({ seccion, sub }: { seccion: string; sub?: string }) {
       <div className="barra-der">
         <EnVivo conectado={conectado} />
         <span className="barra-chip num" title="Planes que ya hicieron juntos">
-          {m.total} hechos
+          {hechos} {hechos === 1 ? "hecho" : "hechos"}
         </span>
       </div>
     </header>
