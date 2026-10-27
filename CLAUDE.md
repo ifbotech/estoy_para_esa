@@ -76,7 +76,7 @@ se carga con `require(`${__hooks}/util.js`)` adentro de cada handler.
 - `web/src/componentes/Deco.tsx`: las piezas del sistema (Bloque, Segmentos,
   EtiquetaSimetria, Sello, EnVivo). `Controles.tsx`: BarraGanas y
   GanasDeLosDos (voto a ciegas + destape + match).
-- `web/src/pantallas/`: Sumar, Planes, PlanDetalle, NuevoPlan, Wrapped, Más.
+- `web/src/pantallas/`: Sumar, Planes, Decidir, PlanDetalle, NuevoPlan, Wrapped, Más.
   No hay pantalla de Recuerdos: el **Wrapped** no está en ningún menú. El
   servidor lo arma solo el 30/6 y el 31/12 (cron en `pb_hooks/wrap.js`),
   congela el período en `wraps` y lo deja abierto 21 días; la primera vez se
@@ -87,6 +87,10 @@ se carga con `require(`${__hooks}/util.js`)` adentro de cada handler.
   NuevoPlan con eso). En **Planes** se ven todos los pendientes y se votan
   de un toque (`VotoRapido`, sigue siendo a ciegas); ahí vive la máquina
   Sorpréndanme (`componentes/Maquina.tsx`).
+- **Decidir** (`pantallas/Decidir.tsx`, `pb_hooks/decisiones.js`): preguntas
+  con respuestas a ciegas por rondas. La regla de `respuestas` esconde la del
+  otro hasta que respondiste; la ronda, el desempate y lo decidido los pone
+  el hook, nunca la app. Las fases salen de `estadoDecision` (calculos.ts).
 - `web/src/secciones/`: lo especial de cada personalidad (cine, lugar, viaje, taller).
   Todos los planes tienen la lista «Ideas» (se suma desde el plan o desde
   NuevoPlan en modo «Sumar a un plan»). Categorías: Cine en casa,

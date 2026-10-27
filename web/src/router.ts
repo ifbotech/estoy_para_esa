@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
  *   #/                  Sumar (nueva aventura)
  *   #/planes?estado=…&cat=…
  *   #/plan/<id>
+ *   #/decidir
  *   #/wrapped           sólo mientras el servidor tiene uno abierto (30/6 y 31/12)
  *   #/mas, #/mas/tema, #/mas/archivo, #/mas/categorias, #/mas/letterboxd
  */

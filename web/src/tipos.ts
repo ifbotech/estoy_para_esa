@@ -88,11 +88,33 @@ export interface Item extends Base {
   veredicto: "" | "repetir" | "pasar"
 }
 
+/** Decidir: una pregunta para los dos, que se resuelve a ciegas y por rondas. */
+export interface Pregunta extends Base {
+  texto: string
+  creada_por: string
+  estado: "abierta" | "decidida" | "archivada"
+  ronda: number
+  /** quiénes ya respondieron la ronda actual (sin decir qué) */
+  respondieron: string[] | null
+  elegida: string
+  desempate: boolean
+  decidida_en: string
+}
+
+/** La respuesta de uno en una ronda. `elige`: id de la respuesta elegida, u «otra». */
+export interface Respuesta extends Base {
+  pregunta: string
+  usuario: string
+  ronda: number
+  texto: string
+  elige: string
+}
+
 /** Una línea del diario de la app (la anotan los hooks del servidor). */
 export interface Actividad {
   tipo:
     | "plan_nuevo" | "agendado" | "en_curso" | "hecho" | "a_idea" | "borrado"
-    | "ganas" | "match" | "puntaje" | "resena" | "fotos" | "item_hecho"
+    | "ganas" | "match" | "puntaje" | "resena" | "fotos" | "item_hecho" | "decidido"
   cuando: string
   plan: string
   titulo: string

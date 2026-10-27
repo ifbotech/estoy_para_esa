@@ -99,6 +99,38 @@ onRecordUpdateRequest((e) => {
   if (plan) a.registrar(e.app, "item_hecho", plan, e.auth ? e.auth.id : "", { lista: e.record.getString("lista"), texto: e.record.getString("texto") })
 }, "items")
 
+// --- Decidir: preguntas y respuestas a ciegas ------------------------------
+
+onRecordCreateRequest((e) => {
+  if (e.auth) e.record.set("creada_por", e.auth.id)
+  e.record.set("estado", "abierta")
+  e.record.set("ronda", 1)
+  e.record.set("respondieron", [])
+  e.record.set("elegida", "")
+  e.next()
+  const u = require(`${__hooks}/util.js`)
+  u.notificar(e.app, e.auth ? e.auth.id : "", {
+    title: `❓ ${u.nombre(e.app, e.auth ? e.auth.id : "")} pregunta`,
+    body: `«${e.record.getString("texto")}». Respondé a ciegas.`,
+    url: "#/decidir",
+    tag: `decidir-${e.record.id}`,
+  })
+}, "preguntas")
+
+onRecordCreateRequest((e) => {
+  e.record.set("elige", "")
+  e.next()
+  require(`${__hooks}/decisiones.js`).alResponder(e.app, e.record, e.auth ? e.auth.id : "")
+}, "respuestas")
+
+onRecordUpdateRequest((e) => {
+  const d = require(`${__hooks}/decisiones.js`)
+  d.validarCambio(e)
+  const antes = e.record.original().getString("elige")
+  e.next()
+  if (e.record.getString("elige") && e.record.getString("elige") !== antes) d.resolver(e.app, e.record, e.auth ? e.auth.id : "")
+}, "respuestas")
+
 // --- Wrapped: a mitad y a fin de año (12:00 UTC = 9 de la mañana acá) -------
 
 cronAdd("wrap-mitad", "0 12 30 6 *", () => {

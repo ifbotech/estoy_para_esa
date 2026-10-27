@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react"
 import { pb } from "./pb"
-import type { Categoria, Item, Lista, Plan, Usuario, Voto } from "./tipos"
+import type { Categoria, Item, Lista, Plan, Pregunta, Respuesta, Usuario, Voto } from "./tipos"
 import { avisar } from "./componentes/Avisos"
 
 /**
@@ -16,6 +16,8 @@ export interface Estado {
   planes: Plan[]
   votos: Voto[]
   items: Item[]
+  preguntas: Pregunta[]
+  respuestas: Respuesta[]
 }
 
 const inicial: Estado = {
@@ -26,6 +28,8 @@ const inicial: Estado = {
   planes: [],
   votos: [],
   items: [],
+  preguntas: [],
+  respuestas: [],
 }
 
 let estado = inicial
@@ -53,13 +57,15 @@ export function useStore<T>(sel: (s: Estado) => T): T {
 
 // La colección `temas` sigue en la base para las versiones archivadas, pero
 // la app actual tiene un diseño fijo y ya no la carga.
-type Coleccion = "usuarios" | "categorias" | "planes" | "votos" | "items"
+type Coleccion = "usuarios" | "categorias" | "planes" | "votos" | "items" | "preguntas" | "respuestas"
 const NOMBRES: Record<Coleccion, string> = {
   usuarios: "users",
   categorias: "categorias",
   planes: "planes",
   votos: "votos",
   items: "items",
+  preguntas: "preguntas",
+  respuestas: "respuestas",
 }
 const ORDEN: Record<Coleccion, string> = {
   usuarios: "name",
@@ -67,6 +73,8 @@ const ORDEN: Record<Coleccion, string> = {
   planes: "-created",
   votos: "created",
   items: "orden",
+  preguntas: "-created",
+  respuestas: "created",
 }
 
 // --- cambios propios pendientes (UI optimista + debounce) -----------------
@@ -146,7 +154,7 @@ function aplicar(clave: Coleccion, accion: string, rec: { id: string }, remoto =
     return
   }
   const i = lista.findIndex((r) => r.id === rec.id)
-  const nueva = i >= 0 ? lista.map((r, j) => (j === i ? rec : r)) : clave === "planes" ? [rec, ...lista] : [...lista, rec]
+  const nueva = i >= 0 ? lista.map((r, j) => (j === i ? rec : r)) : clave === "planes" || clave === "preguntas" ? [rec, ...lista] : [...lista, rec]
   if (clave === "categorias") (nueva as Categoria[]).sort((a, b) => a.orden - b.orden)
   if (clave === "items") (nueva as Item[]).sort((a, b) => a.orden - b.orden)
   set({ [clave]: nueva } as Partial<Estado>)
@@ -366,4 +374,50 @@ export async function editarPerfil(cambios: Partial<Usuario>) {
   if (!uid) return
   const rec = await intentar(() => pb.collection("users").update<Usuario>(uid, cambios))
   if (rec) aplicar("usuarios", "update", rec)
+}
+
+// --- decidir ---------------------------------------------------------------
+
+export async function crearPregunta(texto: string) {
+  const rec = await intentar(() => pb.collection("preguntas").create<Pregunta>({ texto }))
+  if (rec) aplicar("preguntas", "create", rec)
+  return rec
+}
+
+/** Trae de nuevo las respuestas: al responder se destapa la del otro, que ya estaba. */
+async function traerRespuestas() {
+  const lista = await pb.collection("respuestas").getFullList<Respuesta>({ sort: "created", batch: 500 })
+  set({ respuestas: lista })
+}
+
+export async function responder(pregunta: Pregunta, texto: string) {
+  const uid = pb.authStore.record?.id
+  if (!uid) return
+  const rec = await intentar(
+    () => pb.collection("respuestas").create<Respuesta>({ pregunta: pregunta.id, usuario: uid, ronda: pregunta.ronda, texto }),
+    "No se pudo mandar la respuesta",
+  )
+  if (rec) aplicar("respuestas", "create", rec)
+  await traerRespuestas().catch(() => {})
+}
+
+/** Elegir una respuesta (su id) u «otra» si ninguna tienta. */
+export async function elegirRespuesta(mia: Respuesta, elige: string) {
+  aplicar("respuestas", "update", { ...mia, elige } as Respuesta)
+  const rec = await intentar(() => pb.collection("respuestas").update<Respuesta>(mia.id, { elige }), "No se pudo elegir")
+  if (rec) aplicar("respuestas", "update", rec)
+  else aplicar("respuestas", "update", mia)
+}
+
+export async function archivarPregunta(id: string) {
+  const rec = await intentar(() => pb.collection("preguntas").update<Pregunta>(id, { estado: "archivada" }))
+  if (rec) aplicar("preguntas", "update", rec)
+}
+
+export async function borrarPregunta(id: string) {
+  const ok = await intentar(() => pb.collection("preguntas").delete(id))
+  if (ok) {
+    aplicar("preguntas", "delete", { id })
+    set({ respuestas: estado.respuestas.filter((r) => r.pregunta !== id) })
+  }
 }

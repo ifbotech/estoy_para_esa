@@ -368,6 +368,45 @@
 .rapida-cabeza img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .rapida-cabeza .chip-cat { position: absolute; left: 8px; top: 8px; background: var(--superficie); }
 
+/* --- decidir ------------------------------------------------------------- */
+.decidir-como { display: grid; gap: 0; margin-bottom: var(--gap-bloques); border: var(--borde); border-radius: var(--radio); background: var(--superficie); box-shadow: var(--sombra-chica); overflow: hidden; }
+.decidir-como li { display: flex; gap: 12px; align-items: baseline; padding: 10px 12px; }
+.decidir-como li + li { border-top: 2px dashed var(--rayita); }
+.decidir-como .num { flex: none; font-size: 12px; font-weight: 700; }
+.decidir-como p { font-size: 14.5px; line-height: 1.35; }
+.decidir-nueva { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: var(--gap-bloques); }
+.pregunta { display: grid; gap: 12px; margin-bottom: var(--gap-bloques); padding: 12px; border: var(--borde); border-top: 10px solid var(--lila); border-radius: var(--radio); background: var(--superficie); box-shadow: var(--sombra); }
+.pregunta.fase-responder, .pregunta.fase-elegir { border-top-color: var(--amarillo); }
+.pregunta.fase-decidida { border-top-color: var(--verde); }
+.pregunta-cabeza { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pregunta-quitar { width: var(--toque); height: 32px; margin: -6px -6px -6px 0; display: grid; place-items: center; font-size: 20px; font-weight: 700; color: var(--suave); }
+.pregunta-texto { font-size: clamp(26px, 8vw, 34px); line-height: 0.95; text-transform: uppercase; font-stretch: 80%; font-variation-settings: "wdth" 80; overflow-wrap: anywhere; }
+.pregunta-descartadas { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: 13.5px; color: var(--suave); }
+.pregunta-descartadas s { text-decoration-thickness: 2px; }
+.pregunta-estado { font-size: 14px; font-weight: 600; color: var(--suave); }
+.pregunta-responder { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.pregunta-pista { font-family: var(--f-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; perspective: 600px; }
+.opcion-carta { position: relative; display: grid; align-content: start; gap: 6px; min-height: 110px; padding: 10px; border: var(--borde); border-radius: var(--radio); background: var(--papel); box-shadow: var(--sombra-chica); text-align: left; transition: transform var(--rapido) ease-out, box-shadow var(--rapido) ease-out, background-color var(--rapido); }
+button.opcion-carta:active, button.opcion-carta:focus-visible { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--tinta); }
+.opcion-carta .etiqueta { display: inline-flex; align-items: center; gap: 6px; }
+.opcion-carta .etiqueta i { width: 10px; height: 10px; border: 1.5px solid var(--tinta); border-radius: 2px; }
+.opcion-carta b { font-size: 18px; line-height: 1.2; overflow-wrap: anywhere; }
+.opcion-carta.elegida { background: var(--amarillo); }
+.opcion-carta.tapada { place-content: center; justify-items: center; background: repeating-linear-gradient(-45deg, var(--tinta) 0 3px, var(--superficie) 3px 9px); }
+.opcion-carta.tapada .etiqueta, .opcion-carta.tapada b { padding: 2px 8px; background: var(--superficie); border: var(--borde); border-radius: 3px; }
+.opcion-carta.tapada b { font-family: var(--f-mono); font-size: 22px; }
+.opcion-marca { justify-self: start; padding: 1px 6px; border-radius: 3px; background: var(--tinta); color: var(--amarillo); font-family: var(--f-mono); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.pregunta-otra { min-height: var(--toque); padding: 8px 12px; border: 2px dashed var(--tinta); border-radius: var(--radio); font-weight: 700; font-size: 14.5px; transition: background-color var(--rapido); }
+.pregunta-otra.elegida, .pregunta-otra:active { background: var(--rosa); border-style: solid; }
+.pregunta-decidida { display: grid; justify-items: start; gap: 8px; }
+.pregunta-elegida { font-family: var(--f-display); font-weight: 800; font-size: clamp(28px, 9vw, 40px); line-height: 0.95; text-transform: uppercase; font-stretch: 80%; font-variation-settings: "wdth" 80; overflow-wrap: anywhere; }
+.decidir-historial ul { display: grid; gap: 0; }
+.decidir-historial li { display: grid; gap: 2px; padding: 8px 0; border-top: 2px dashed var(--rayita); }
+.decidir-historial li:first-child { border-top: 0; padding-top: 0; }
+.decidir-historial li span { font-size: 13px; color: var(--suave); }
+.decidir-historial li b { font-size: 16px; }
+
 /* --- wrapped -------------------------------------------------------------- */
 .wrapped { position: fixed; inset: 0; z-index: 50; overflow: hidden; color: var(--tinta); background: var(--papel); }
 .w-f1 { background: var(--amarillo); }

@@ -9,6 +9,7 @@ import { VistaRapida } from "./componentes/VistaRapida"
 import { Login } from "./pantallas/Login"
 import { Mas } from "./pantallas/Mas"
 import { PlanDetalle } from "./pantallas/PlanDetalle"
+import { Decidir } from "./pantallas/Decidir"
 import { Planes } from "./pantallas/Planes"
 import { Sumar } from "./pantallas/Sumar"
 import { Wrapped } from "./pantallas/Wrapped"
@@ -83,6 +84,9 @@ export function App() {
       break
     case "plan":
       pantalla = <PlanDetalle id={ruta.partes[1]} />
+      break
+    case "decidir":
+      pantalla = <Decidir />
       break
     case "wrapped":
       pantalla = <Wrapped />

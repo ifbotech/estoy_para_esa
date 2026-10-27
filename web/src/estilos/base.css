@@ -163,7 +163,7 @@ h1, h2, h3, h4 { font-family: var(--f-display); font-weight: 800; line-height: 1
   bottom: 0;
   z-index: 40;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   padding-bottom: var(--sup-abajo);
   background: var(--superficie);
   border-top: var(--borde);
@@ -177,6 +177,8 @@ h1, h2, h3, h4 { font-family: var(--f-display); font-weight: 800; line-height: 1
   border-left: var(--borde);
 }
 .nav-tab:first-child { border-left: 0; }
+.nav-tab { position: relative; }
+.nav-punto { position: absolute; top: 6px; right: calc(50% - 22px); min-width: 18px; height: 18px; display: grid; place-items: center; padding: 0 4px; border: 2px solid var(--tinta); border-radius: 9px; background: var(--rojo); color: var(--papel); font-size: 10px; font-weight: 700; line-height: 1; }
 .nav-icono { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; stroke-linejoin: miter; }
 .nav-nombre { font-family: var(--f-mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .nav-tab.activa { background: var(--tinta); color: var(--papel); }
