@@ -141,7 +141,7 @@ export function Fotos({ plan }: { plan: Plan }) {
       {plan.fotos.length ? (
         <div className="fotos">
           {plan.fotos.map((f) => (
-            <motion.button key={f} className="foto" onClick={() => setAbierta(f)} layoutId={`foto-${f}`}>
+            <motion.button key={f} className="foto recorte-piedra" onClick={() => setAbierta(f)} layoutId={`foto-${f}`}>
               <img src={urlArchivo(plan, f, "300x300")} alt="" loading="lazy" />
             </motion.button>
           ))}

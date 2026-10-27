@@ -1,4 +1,5 @@
 import { aCiegas, fecha } from "../calculos"
+import { Mancha } from "../componentes/Aerosol"
 import { Arte } from "../componentes/Arte"
 import { useStore, useYo } from "../store"
 import type { Personalidad } from "../tipos"
@@ -25,7 +26,11 @@ export function Sumar({ onNuevo }: { onNuevo: (categoria?: string, modo?: ModoNu
   const categorias = useStore((s) => s.categorias)
   const planes = useStore((s) => s.planes)
   const votos = useStore((s) => s.votos)
+  const usuarios = useStore((s) => s.usuarios)
   const yo = useYo()
+  const hechos = planes.filter((p) => p.estado === "hecho").length
+  const primero = planes.reduce<string>((m, p) => (!m || p.created < m ? p.created : m), "")
+  const desde = fecha(primero)?.toLocaleDateString("es-AR", { month: "short", year: "numeric" }).replace(".", "")
   const wrap = useWrap()
   const pendientes = planes.filter((p) => p.estado !== "hecho")
   const porVotar = pendientes.filter((p) => !votos.some((v) => v.plan === p.id && v.usuario === yo?.id))
@@ -38,9 +43,16 @@ export function Sumar({ onNuevo }: { onNuevo: (categoria?: string, modo?: ModoNu
 
   return (
     <div className="sumar">
+      <div className="franja" aria-hidden>
+        <span>{usuarios.map((u) => u.name).join(" & ")}</span>
+        <span>nueva aventura</span>
+        <span className="num">
+          {hechos} {hechos === 1 ? "hecho" : "hechos"}
+          {desde ? ` · desde ${desde}` : ""}
+        </span>
+      </div>
       <header className="cabeza-pantalla" style={{ "--cc": "var(--amarillo)" } as React.CSSProperties}>
         <div>
-          <p className="etiqueta">nueva aventura</p>
           <h1 className="titulo-pantalla">¿Qué sumamos{yo?.name ? `, ${yo.name}` : ""}?</h1>
         </div>
       </header>
@@ -79,11 +91,12 @@ export function Sumar({ onNuevo }: { onNuevo: (categoria?: string, modo?: ModoNu
       <p className="etiqueta sumar-o">o elegí qué es</p>
 
       <div className="sumar-cats">
-        {categorias.map((c) => {
+        {categorias.map((c, i) => {
           const n = pendientes.filter((p) => p.categoria === c.id).length
           return (
             <button key={c.id} className="sumar-cat" style={{ "--cc": c.color || "var(--amarillo)" } as React.CSSProperties} onClick={() => abrir(c.id)}>
               <span className="sumar-cat-arte">
+                <Mancha color="rgb(255 254 251 / 0.62)" semilla={i + 2} />
                 <Arte tipo={c.personalidad} tam={13} />
               </span>
               <span className="sumar-cat-texto">

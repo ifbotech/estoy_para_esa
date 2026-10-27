@@ -14,7 +14,15 @@ App compartida de Rocío e Iñaki para guardar y seguir sus plancitos. Leé
   commits ni en los PR.
 - **Idioma**: todo en español rioplatense (código, comentarios, textos de la
   app, commits). Voseo en la interfaz.
-- **Estética (v3, «Brutalismo editorial»)**: neo-brutalismo calmo y legible.
+- **Estética (v4, «Hecho a mano», sobre la v3)**: la capa `estilos/v4.css`
+  va encima de la v3. Paleta plana de cartel (Dröm), títulos en minúscula
+  pesada y ancha, contornos temblados con radios desparejos, aerosol para
+  sellos y momentos que importan (`componentes/Aerosol.tsx`: filtros
+  `#aerosol` y `#piedra`, `SelloAerosol`, `Mancha`, `Piedra`, `Hilo`),
+  personajes-mueble con contorno grueso y ojitos que siguen el dedo, Decidir
+  con piedras que se apilan, fotos recortadas como piedra e hilo en lo hecho.
+  Debajo sigue la v3:
+- **Base v3 («Brutalismo editorial»)**: neo-brutalismo calmo y legible.
   Papel hueso (`#F5F2E8`) y tinta (`#121211`, contraste AAA),
   `border: 2px solid var(--tinta)`, sombras duras sin desenfoque (`--sombra`
   3 px, `--sombra-chica` 2 px), radio de 6 px en todo, números en

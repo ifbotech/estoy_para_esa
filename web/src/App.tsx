@@ -66,7 +66,7 @@ export function App() {
     return (
       <>
         <div className="cargando" role="status">
-          <span className="cargando-marca">ESTOY PARA ESA <Globos tam={30} /></span>
+          <span className="cargando-marca">estoy para esa <span className="marca-cuadro grande"><Globos tam={28} /></span></span>
           <span className="cargando-barra" aria-hidden>
             <i />
           </span>
@@ -150,7 +150,7 @@ function BarraSuperior({ seccion, sub }: { seccion: string; sub?: string }) {
         </button>
       ) : (
         <a className="barra-marca" href="#/">
-          ESTOY PARA ESA <Globos />
+          <span className="marca-cuadro"><Globos tam={22} /></span> estoy para esa
         </a>
       )}
       <div className="barra-der">

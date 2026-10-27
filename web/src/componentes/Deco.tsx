@@ -2,6 +2,7 @@ import { animate, motion, useMotionValue, useTransform } from "motion/react"
 import { useEffect, type CSSProperties, type ReactNode } from "react"
 import { SIMETRIAS, simetria } from "../calculos"
 import type { Voto } from "../tipos"
+import { SelloAerosol } from "./Aerosol"
 
 /**
  * Las piezas del sistema neo-brutalista: bloques con cabezal numerado,
@@ -72,9 +73,11 @@ export function EtiquetaSimetria({ votos, chica = false }: { votos: Voto[]; chic
   )
 }
 
-/** Sello rectangular de goma, recto: [ ¡MATCH TOTAL! 🔥 ]. */
+const TONOS = { rojo: "var(--rojo)", verde: "#1E9A55", tinta: "var(--tinta)" }
+
+/** Sello pintado con aerosol, torcido y con chorreadas (v4): ¡MATCH TOTAL! 🔥 */
 export function Sello({ children, tono = "rojo" }: { children: ReactNode; tono?: "rojo" | "verde" | "tinta" }) {
-  return <span className={`sello sello-${tono}`}>{children}</span>
+  return <SelloAerosol color={TONOS[tono]}>{children}</SelloAerosol>
 }
 
 /** Indicador de tiempo real: un punto lleno si hay conexión. */

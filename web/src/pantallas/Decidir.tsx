@@ -1,8 +1,9 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useState } from "react"
 import { estadoDecision, fecha, type EstadoDecision } from "../calculos"
+import { Mancha, Piedra } from "../componentes/Aerosol"
 import { Boton } from "../componentes/Controles"
-import { Bloque, Sello } from "../componentes/Deco"
+import { Sello } from "../componentes/Deco"
 import { colorDe } from "../componentes/Tarjetas"
 import { archivarPregunta, borrarPregunta, crearPregunta, elegirRespuesta, responder, useStore, useYo } from "../store"
 import type { Pregunta, Respuesta } from "../tipos"
@@ -88,19 +89,24 @@ export function Decidir() {
       )}
 
       {archivadas.length > 0 && (
-        <Bloque titulo="Ya decidido" className="decidir-historial">
-          <ul>
-            {archivadas.map((p) => (
-              <li key={p.id}>
-                <span>{p.texto}</span>
-                <b>
-                  {p.desempate ? "🪙 " : ""}
-                  {p.elegida}
-                </b>
+        <section className="decidir-historial" aria-label="Ya decidido">
+          <h2 className="etiqueta">ya decidido</h2>
+          {/* una pila de piedras: lo más nuevo arriba, como se apilan */}
+          <ol className="pila">
+            {archivadas.map((p, i) => (
+              <li key={p.id} style={{ "--corre": `${((i * 37) % 5) * 8 - 16}px`, zIndex: archivadas.length - i } as React.CSSProperties}>
+                <Piedra semilla={semillaDe(p.id)} ancho={Math.min(300, 140 + p.elegida.length * 6)} alto={78}>
+                  <Mancha color={i % 2 ? "var(--rosa)" : "var(--amarillo)"} semilla={semillaDe(p.id) + 5} className="piedra-mancha" />
+                  <span className="pila-pregunta">{p.texto}</span>
+                  <span className="piedra-texto">
+                    {p.desempate ? "🪙 " : ""}
+                    {p.elegida}
+                  </span>
+                </Piedra>
               </li>
             ))}
-          </ul>
-        </Bloque>
+          </ol>
+        </section>
       )}
     </div>
   )
@@ -186,7 +192,7 @@ function TarjetaPregunta({ pregunta: p, e }: { pregunta: Pregunta; e: EstadoDeci
 
       {e.fase === "esperando" && e.mia && (
         <>
-          <div className="opciones">
+          <div className="decidir-opciones">
             <Opcion r={e.mia} etiqueta="vos" color={color(e.mia.usuario)} />
             <Tapada nombre={nombreOtro} />
           </div>
@@ -197,7 +203,7 @@ function TarjetaPregunta({ pregunta: p, e }: { pregunta: Pregunta; e: EstadoDeci
       {(e.fase === "elegir" || e.fase === "esperando-eleccion") && e.mia && e.otra && (
         <>
           <p className="pregunta-pista">{e.fase === "elegir" ? "¿Cuál te copa más?" : `Elegiste. Falta ${nombreOtro}.`}</p>
-          <div className="opciones">
+          <div className="decidir-opciones">
             {[e.mia, e.otra].map((r, i) => (
               <Opcion
                 key={r.id}
@@ -242,15 +248,25 @@ function Estado({ mio, otro, nombreOtro }: { mio: boolean; otro: boolean; nombre
   )
 }
 
+/** Un número fijo por id, para que cada piedra tenga siempre la misma forma. */
+function semillaDe(id: string) {
+  let n = 0
+  for (const c of id) n = (n * 31 + c.charCodeAt(0)) % 997
+  return n + 1
+}
+
 function Tapada({ nombre }: { nombre: string }) {
   return (
-    <div className="opcion-carta tapada" aria-label={`La respuesta de ${nombre}, tapada`}>
-      <span className="etiqueta">{nombre}</span>
-      <b>¿?</b>
+    <div className="opcion-piedra tapada" aria-label={`La respuesta de ${nombre}, tapada`}>
+      <Piedra semilla={7} ancho={160} alto={130}>
+        <span className="etiqueta">{nombre}</span>
+        <span className="piedra-texto">¿?</span>
+      </Piedra>
     </div>
   )
 }
 
+/** Una respuesta: una piedra con la respuesta pintada con aerosol, del color de quien la escribió. */
 function Opcion({
   r,
   etiqueta,
@@ -268,14 +284,16 @@ function Opcion({
 }) {
   const contenido = (
     <>
-      <span className="etiqueta">
-        <i style={{ background: color }} aria-hidden /> {etiqueta}
-      </span>
-      <b>{r.texto}</b>
+      {elegida && <Mancha color="var(--amarillo)" semilla={semillaDe(r.id)} className="opcion-mancha" />}
+      <Piedra semilla={semillaDe(r.id)} ancho={160} alto={130}>
+        <span className="etiqueta">{etiqueta}</span>
+        <Mancha color={color} semilla={semillaDe(r.id) + 3} className="piedra-mancha" />
+        <span className="piedra-texto">{r.texto}</span>
+      </Piedra>
       {elegida && <span className="opcion-marca">tu elegida</span>}
     </>
   )
-  const clase = `opcion-carta ${elegida ? "elegida" : ""}`
+  const clase = `opcion-piedra ${elegida ? "elegida" : ""}`
   const quieto = useReducedMotion()
   // la del otro se destapa con un giro corto (sin movimiento, si así lo pidió el teléfono)
   const anim = destape && !quieto ? { initial: { rotateY: 90, opacity: 0 }, animate: { rotateY: 0, opacity: 1 }, transition: { duration: 0.35 } } : {}
