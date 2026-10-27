@@ -93,7 +93,7 @@
   text-align: left;
   overflow: hidden;
 }
-.sumar-cat-arte { display: grid; place-items: center; min-height: 86px; background: var(--cc); border-bottom: var(--borde); }
+.sumar-cat-arte { display: grid; place-items: center; min-height: 112px; padding: 6px 0; background: var(--cc); border-bottom: var(--borde); }
 .sumar-cat-texto { display: grid; align-content: start; gap: 2px; padding: 10px 12px 8px; }
 .sumar-cat-texto b { font-family: var(--f-display); font-weight: 800; font-size: 19px; line-height: 1; text-transform: uppercase; font-stretch: 85%; font-variation-settings: "wdth" 85; overflow-wrap: anywhere; }
 .sumar-cat-texto small { font-family: var(--f-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--suave); }

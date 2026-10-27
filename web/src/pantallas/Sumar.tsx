@@ -84,12 +84,10 @@ export function Sumar({ onNuevo }: { onNuevo: (categoria?: string, modo?: ModoNu
           return (
             <button key={c.id} className="sumar-cat" style={{ "--cc": c.color || "var(--amarillo)" } as React.CSSProperties} onClick={() => abrir(c.id)}>
               <span className="sumar-cat-arte">
-                <Arte tipo={c.personalidad} tam={8} />
+                <Arte tipo={c.personalidad} tam={13} />
               </span>
               <span className="sumar-cat-texto">
-                <b>
-                  {c.emoji} {c.nombre}
-                </b>
+                <b>{c.nombre}</b>
                 <small className="num">{n ? `${n} en la lista` : "¡estreno!"}</small>
               </span>
               <span className="sumar-cat-pie">
