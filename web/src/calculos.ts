@@ -1,4 +1,4 @@
-import type { Actividad, Categoria, Estado, Item, Personalidad, Plan, Usuario, Voto } from "./tipos"
+import type { Actividad, Categoria, Pregunta, Respuesta, Estado, Item, Personalidad, Plan, Usuario, Voto } from "./tipos"
 
 // --- ganas y ranking -------------------------------------------------------
 
@@ -611,3 +611,52 @@ export function numerosActividad(actividad: Actividad[]): NumerosActividad {
 export const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]
 
 export const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+// --- decidir ---------------------------------------------------------------
+
+export type Fase =
+  | "responder" // te falta escribir tu respuesta
+  | "esperando" // ya respondiste, falta el otro (la suya sigue tapada)
+  | "elegir" // están las dos: te toca elegir
+  | "esperando-eleccion" // ya elegiste, falta el otro
+  | "decidida"
+  | "archivada"
+
+export interface EstadoDecision {
+  fase: Fase
+  mia: Respuesta | null
+  otra: Respuesta | null
+  /** el otro ya respondió esta ronda (aunque no se vea qué) */
+  otroRespondio: boolean
+  /** las rondas anteriores: las opciones que no tentaron */
+  descartadas: Respuesta[]
+}
+
+/**
+ * En qué anda una pregunta para mí. La respuesta del otro sólo llega del
+ * servidor cuando yo también respondí, así que «otroRespondio» antes de eso
+ * sale de `respondieron` (la pregunta dice quién respondió, no qué).
+ */
+export function estadoDecision(p: Pregunta, respuestas: Respuesta[], yo: string | undefined): EstadoDecision {
+  const deEsta = respuestas.filter((r) => r.pregunta === p.id)
+  const ronda = deEsta.filter((r) => r.ronda === p.ronda)
+  const mia = ronda.find((r) => r.usuario === yo) ?? null
+  const otra = ronda.find((r) => r.usuario !== yo) ?? null
+  const descartadas = deEsta.filter((r) => r.ronda < p.ronda)
+  const otroRespondio = Boolean(otra) || (p.respondieron ?? []).some((u) => u !== yo)
+  const base = { mia, otra, otroRespondio, descartadas }
+  if (p.estado === "archivada") return { fase: "archivada", ...base }
+  if (p.estado === "decidida") return { fase: "decidida", ...base }
+  if (!mia) return { fase: "responder", ...base }
+  if (!otra) return { fase: "esperando", ...base }
+  if (!mia.elige) return { fase: "elegir", ...base }
+  return { fase: "esperando-eleccion", ...base }
+}
+
+/** Cuántas preguntas esperan algo de mí (para el puntito de la pestaña). */
+export function decisionesPendientes(preguntas: Pregunta[], respuestas: Respuesta[], yo: string | undefined): number {
+  return preguntas.filter((p) => {
+    const f = estadoDecision(p, respuestas, yo).fase
+    return f === "responder" || f === "elegir"
+  }).length
+}

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
-  accionPrincipal, aCiegas, barriosConquistados, candidatosSorteo, curaduriaPelis, demorasRodillo, esMatchTotal, momentum,
+  accionPrincipal, aCiegas, decisionesPendientes, estadoDecision, barriosConquistados, candidatosSorteo, curaduriaPelis, demorasRodillo, esMatchTotal, momentum,
   numerosActividad, promedioGanas, rachaMaxima, rankear, resumenAnual, resumenPeriodo, sellado, simetria, sortear,
 } from "./calculos"
-import type { Actividad, Categoria, Item, Lista, Plan, Usuario, Voto } from "./tipos"
+import type { Actividad, Categoria, Pregunta, Respuesta, Item, Lista, Plan, Usuario, Voto } from "./tipos"
 
 const base = { collectionId: "", collectionName: "", updated: "" }
 
@@ -301,5 +301,35 @@ describe("wrapped", () => {
     expect(n.tachados).toBe(1)
     expect(n.diaTop).toBe(new Date("2026-03-07T15:00:00Z").getDay())
     expect(numerosActividad([]).diaTop).toBeNull()
+  })
+})
+
+describe("decidir", () => {
+  const preg = (extra: Partial<Pregunta> = {}): Pregunta => ({
+    ...base, id: "q", created: "", texto: "¿?", creada_por: "i", estado: "abierta", ronda: 1, respondieron: [], elegida: "", desempate: false, decidida_en: "", ...extra,
+  })
+  const resp = (id: string, usuario: string, ronda = 1, elige = ""): Respuesta => ({
+    ...base, id, created: "", pregunta: "q", usuario, ronda, texto: id, elige,
+  })
+
+  it("sigue las fases de una ronda", () => {
+    expect(estadoDecision(preg(), [], "i").fase).toBe("responder")
+    expect(estadoDecision(preg(), [resp("a", "i")], "i").fase).toBe("esperando")
+    expect(estadoDecision(preg(), [resp("a", "i"), resp("b", "r")], "i").fase).toBe("elegir")
+    expect(estadoDecision(preg(), [resp("a", "i", 1, "b"), resp("b", "r")], "i").fase).toBe("esperando-eleccion")
+    expect(estadoDecision(preg({ estado: "decidida" }), [], "i").fase).toBe("decidida")
+  })
+
+  it("en una ronda nueva, lo anterior queda como descartado", () => {
+    const e = estadoDecision(preg({ ronda: 2 }), [resp("a", "i", 1, "otra"), resp("b", "r", 1, "a"), resp("c", "r", 2)], "i")
+    expect(e.fase).toBe("responder")
+    expect(e.descartadas.map((r) => r.id)).toEqual(["a", "b"])
+    expect(e.otroRespondio).toBe(true)
+    expect(estadoDecision(preg({ respondieron: ["r"] }), [], "i").otroRespondio).toBe(true)
+  })
+
+  it("cuenta lo que espera algo de mí", () => {
+    const qs = [preg(), preg({ id: "q2" }), preg({ id: "q3", estado: "decidida" })]
+    expect(decisionesPendientes(qs, [resp("a", "i")], "i")).toBe(1)
   })
 })
