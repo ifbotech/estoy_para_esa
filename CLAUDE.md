@@ -25,7 +25,10 @@ App compartida de Rocío e Iñaki para guardar y seguir sus plancitos. Leé
   redundantes («Estado: Idea» → un chip; «Precio: $$» → `$$`).
   **Nada se mueve solo**: sin marquesinas, sin cosas flotando, sin
   inclinaciones (sólo las Polaroids, 1° como mucho), sin grano. Los
-  personajes (`Arte.tsx`) son un detalle quieto adentro de un bloque.
+  personajes (`Arte.tsx`) son un detalle quieto adentro de un bloque:
+  caricatura orgánica (cuerpos de un color, blandos y torcidos con `blob`,
+  patitas de línea fina, mitones, caras mínimas), la personalidad en la
+  pose y nunca el objeto obvio.
   Controles de 44 × 44 px como mínimo. Respetá `prefers-reduced-motion` y el
   multiplicador `--mov`.
 - **Diseño fijo**: no hay temas ni editor de temas. Los tokens viven en
