@@ -1,6 +1,7 @@
 import { aCiegas, fecha } from "../calculos"
 import { Mancha } from "../componentes/Aerosol"
 import { Arte } from "../componentes/Arte"
+import { InvitarAvisos } from "../componentes/InvitarAvisos"
 import { useStore, useYo } from "../store"
 import type { Personalidad } from "../tipos"
 import type { ModoNuevo } from "./NuevoPlan"
@@ -68,6 +69,8 @@ export function Sumar({ onNuevo }: { onNuevo: (categoria?: string, modo?: ModoNu
           </span>
         </a>
       )}
+
+      <InvitarAvisos />
 
       <button className="sumar-charla" onClick={() => abrir()}>
         <span className="sumar-charla-campo">Contalo como te salga…</span>

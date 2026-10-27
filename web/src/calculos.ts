@@ -421,10 +421,6 @@ export interface Resumen {
 
 const DIA = 24 * 3600 * 1000
 
-export function resumenAnual(anio: number, planes: Plan[], votos: Voto[], categorias: Categoria[], items: Item[]): Resumen {
-  return resumenPeriodo(periodoAnual(anio), planes, votos, categorias, items)
-}
-
 export function resumenPeriodo(
   periodo: Periodo,
   planes: Plan[],

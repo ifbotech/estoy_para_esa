@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react"
 import { pb } from "./pb"
+import { desactivarPush } from "./util/push"
 import type { Categoria, Item, Lista, Plan, Pregunta, Respuesta, Usuario, Voto } from "./tipos"
 import { avisar } from "./componentes/Avisos"
 
@@ -234,6 +235,8 @@ async function suscribir() {
 }
 
 export async function terminar() {
+  // este teléfono deja de recibir los avisos de esta cuenta
+  await desactivarPush().catch(() => {})
   for (const d of desuscribir) await d().catch(() => {})
   desuscribir = []
   iniciado = false

@@ -1,7 +1,7 @@
 // Avisos de los votos: un puntaje nuevo, un voto que espera el del otro, o
 // muchas ganas. Las ganas son a ciegas: si el otro todavía no votó, el aviso
 // no dice el número (lo destapa cuando vota).
-function avisar(e, ganasAntes, puntajeAntes, nuevo) {
+function avisar(e, ganasAntes, puntajeAntes, nuevo, resenaAntes) {
   const u = require(`${__hooks}/util.js`)
   const ganas = e.record.getFloat("ganas")
   const puntaje = e.record.getFloat("puntaje")
@@ -14,6 +14,16 @@ function avisar(e, ganasAntes, puntajeAntes, nuevo) {
   const quien = u.nombre(e.app, e.record.getString("usuario"))
   const titulo = plan.getString("titulo")
   const base = { url: `#/plan/${plan.id}`, tag: `voto-${plan.id}` }
+
+  const resena = e.record.getString("resena").trim()
+  if (resena && !String(resenaAntes || "").trim()) {
+    u.notificar(e.app, e.record.getString("usuario"), {
+      ...base,
+      tag: `resena-${plan.id}`,
+      title: `✍️ ${quien} escribió su reseña`,
+      body: `«${titulo}»: ${resena.length > 140 ? resena.slice(0, 139) + "…" : resena}`,
+    })
+  }
 
   if (puntaje > 0 && puntajeAntes === 0) {
     const estrellas = "★".repeat(Math.floor(puntaje)) + (puntaje % 1 ? "½" : "")

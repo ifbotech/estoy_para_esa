@@ -25,7 +25,8 @@ del servidor, y dos veces por año (30 de junio y 31 de diciembre) llega el
 | **Viajes** ✈️ | **Boarding pass** con ida, vuelta, días y `8/12 EN VALIJA`; itinerario por día que se lee sin señal. |
 | **DIY** 🔨 | Pasos y materiales con barra segmentada, y el recordatorio de la foto del **antes** al arrancar y del **después** al terminar. |
 | **Wrapped** | No está en ningún menú: llega solo el **30/6** (mitad de año) y el **31/12** (año entero), se abre la primera vez y queda abierto 21 días con su ticket en Sumar. El período en historias: total, categorías, mes más intenso, lo que se movieron (ideas, votos, agendados, pasos, fotos, su día de la semana), pelis, curaduría, viajes, barrios, matches totales, collage de fotos, quién es más manija, el plan que los dividió y el **ritmo compartido**. |
-| **Más** | Categorías, Letterboxd, avisos push y el **Archivo** de versiones. Nada más. |
+| **Avisos** | Todo lo que hace uno le llega al otro al toque: planes nuevos (con el día), ganas a ciegas y matches, agendados y cambios de día, en curso y hecho, ideas, valija, pasos e itinerario (y cuando una lista se completa), fotos, puntajes y reseñas, Decidir paso a paso, categorías nuevas, planes borrados y el Wrapped. Además: «⏰ en un rato» una hora antes de cada plan, «☀️ hoy hay plan» a las 9:30 y, a las 20:00, sólo si hay algo, lo que espera tu respuesta o tus ganas. El ícono muestra cuántas cosas te esperan. |
+| **Más** | Categorías, Letterboxd, avisos push (con prueba y estado de cada teléfono) y el **Archivo** de versiones. Nada más. |
 
 Todo es **en tiempo real**: lo que carga uno le aparece al otro al instante.
 Y anda **sin señal**: los planes, viajes y valijas quedan guardados en el

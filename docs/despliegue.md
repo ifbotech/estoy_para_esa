@@ -94,6 +94,29 @@ curl -X POST https://ifbotech.com/estoyparaesa/api/epe/wrap/generar -H "Authoriz
 hace lo mismo que el cron (el período de hoy y el push). Para cerrarlo antes,
 cambiá `cierra` en el panel de datos.
 
+## Avisos push
+
+Las claves VAPID viven en `pb_data/vapid.json` (entran en el respaldo): si
+se pierden, cada teléfono vuelve a anotarse solo la próxima vez que abre la
+app. Cada suscripción guarda su último envío bueno y su último error
+(`push_subs` en el panel de datos, o Más → Avisos en la app, que además
+manda una prueba y dice cómo le fue a cada teléfono). Las que el servicio
+de push da por muertas (404/410) o fallan 5 veces seguidas se borran.
+
+Los recordatorios salen de crons de PocketBase (hora UTC): «⏰ en un rato»
+cada 10 minutos, «☀️ hoy hay plan» a las 12:30 (9:30 acá) y los
+empujoncitos de la noche a las 23:00 (20:00 acá). Para correrlos a mano,
+como superusuario (mismo `TOKEN` que arriba):
+
+```bash
+curl -X POST https://ifbotech.com/estoyparaesa/api/epe/avisos/correr -H "Authorization: $TOKEN" \
+  -H 'content-type: application/json' -d '{"cual": "recordatorios"}'   # o "hoy", o "empujoncitos"
+```
+
+En iPhone los avisos sólo andan con la app agregada a la pantalla de
+inicio, y el permiso se pide con un toque (el cartel de Sumar o Más →
+Avisos).
+
 ## Versiones de la app (el Archivo)
 
 Cada versión visual de la app tiene un id en `web/src/versiones.json` (la

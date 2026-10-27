@@ -31,8 +31,11 @@ App compartida de Rocío e Iñaki para guardar y seguir sus plancitos. Leé
   80 ms). Proximidad: compacto adentro de una tarjeta (`--gap-adentro`,
   6 px) y aire entre bloques (`--gap-bloques`, 24 px). Sin prefijos
   redundantes («Estado: Idea» → un chip; «Precio: $$» → `$$`).
-  **Nada se mueve solo**: sin marquesinas, sin cosas flotando, sin
-  inclinaciones (sólo las Polaroids, 1° como mucho), sin grano. Los
+  **Nada se mueve solo**: sin marquesinas, sin cosas flotando, sin grano.
+  La grilla va derecha (tarjetas, filas y botones sin inclinar); lo único
+  torcido es lo «hecho a mano» de la v4: los sellos de aerosol, las piedras
+  y los contornos temblados. Lo que se mueve, se mueve porque lo tocaste
+  (los ojitos, dar vuelta una piedra). Los
   personajes (`Arte.tsx`) son un detalle quieto adentro de un bloque:
   caricatura orgánica (cuerpos de un color, blandos y torcidos con `blob`,
   patitas de línea fina, mitones, caras mínimas), la personalidad en la
@@ -58,6 +61,19 @@ App compartida de Rocío e Iñaki para guardar y seguir sus plancitos. Leé
 - **Actualizaciones**: el service worker nuevo toma el control y recarga la
   app; además la app pregunta por versión nueva cada vez que vuelve a primer
   plano (en iPhone, tocar el ícono retoma la pantalla, no la recarga).
+- **Avisos push**: cada cosa que hace uno le llega al otro (nunca a quien
+  la hizo). Los textos y a quién van están en `pb/pb_hooks/avisos.js` (más
+  los de `votos.js` y `decisiones.js`); se mandan con `u.notificar` /
+  `u.notificarA` de `util.js`, que los pasa a Go (`server/push.go`): en
+  segundo plano, en paralelo, con Topic por `tag` (los del mismo tema se
+  pisan), urgencia alta, y borrando las suscripciones vencidas. Cada aviso
+  lleva `title`, `body`, `url` (el hash que abre) y `tag`. Todo push tiene
+  que terminar en una notificación visible (`sw.ts`): si no, iOS da de baja
+  la suscripción. La app revisa y arregla la suscripción sola cada vez que
+  se abre (`asegurarPush` en `util/push.ts`); pedir permiso necesita un
+  toque. Recordatorios por cron (hora de acá, UTC−3): «en un rato» cada
+  10 min, «hoy hay plan» 9:30, empujoncitos 20:00. Si sumás algo nuevo a la
+  app, sumale su aviso.
 - **Versiones visuales**: cuando se arranca un rediseño grande, agregá una
   entrada nueva arriba en `web/src/versiones.json` (`v2`, `v3`…) para que la
   anterior quede en el Archivo.
@@ -66,7 +82,7 @@ App compartida de Rocío e Iñaki para guardar y seguir sus plancitos. Leé
 
 ```bash
 npm test && npm run build                    # tipos, tests y build
-(cd server && go vet ./... && go build -o /tmp/epe .)
+(cd server && go vet ./... && go test ./... && go build -o /tmp/epe .)
 ```
 
 Para cambios de esquema: una migración nueva en `pb/pb_migrations/`
