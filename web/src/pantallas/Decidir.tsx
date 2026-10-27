@@ -1,12 +1,12 @@
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
-import { useState } from "react"
+import { AnimatePresence, motion } from "motion/react"
+import { useEffect, useState } from "react"
 import { estadoDecision, fecha, type EstadoDecision } from "../calculos"
-import { Mancha, Piedra } from "../componentes/Aerosol"
+import { PiedraChica, PiedraQueGira } from "../componentes/Piedras"
 import { Boton } from "../componentes/Controles"
 import { Sello } from "../componentes/Deco"
 import { colorDe } from "../componentes/Tarjetas"
 import { archivarPregunta, borrarPregunta, crearPregunta, elegirRespuesta, responder, useStore, useYo } from "../store"
-import type { Pregunta, Respuesta } from "../tipos"
+import type { Pregunta } from "../tipos"
 import { festejar, vibrar } from "../util/efectos"
 import { sonar } from "../util/sonidos"
 
@@ -95,14 +95,13 @@ export function Decidir() {
           <ol className="pila">
             {archivadas.map((p, i) => (
               <li key={p.id} style={{ "--corre": `${((i * 37) % 5) * 8 - 16}px`, zIndex: archivadas.length - i } as React.CSSProperties}>
-                <Piedra semilla={semillaDe(p.id)} ancho={Math.min(300, 140 + p.elegida.length * 6)} alto={78}>
-                  <Mancha color={i % 2 ? "var(--rosa)" : "var(--amarillo)"} semilla={semillaDe(p.id) + 5} className="piedra-mancha" />
+                <PiedraChica semilla={semillaDe(p.id)} color={i % 2 ? "var(--rosa)" : "var(--amarillo)"} ancho={Math.min(300, 150 + p.elegida.length * 6)}>
                   <span className="pila-pregunta">{p.texto}</span>
-                  <span className="piedra-texto">
+                  <span className="pila-elegida">
                     {p.desempate ? "🪙 " : ""}
                     {p.elegida}
                   </span>
-                </Piedra>
+                </PiedraChica>
               </li>
             ))}
           </ol>
@@ -120,7 +119,7 @@ function useNombres() {
 }
 
 function TarjetaPregunta({ pregunta: p, e }: { pregunta: Pregunta; e: EstadoDecision }) {
-  const { usuarios, otro, nombre } = useNombres()
+  const { usuarios, yo, otro, nombre } = useNombres()
   const [texto, setTexto] = useState("")
   const [mandando, setMandando] = useState(false)
   const nombreOtro = otro?.name ?? "el otro"
@@ -136,15 +135,50 @@ function TarjetaPregunta({ pregunta: p, e }: { pregunta: Pregunta; e: EstadoDeci
     vibrar(15)
   }
 
-  const elegir = (id: string, ev: React.MouseEvent) => {
+  const elegir = (id: string, ev?: React.MouseEvent) => {
     if (!e.mia) return
     vibrar(20)
     if (id !== "otra") {
       sonar("esa")
-      festejar(ev.clientX / innerWidth, ev.clientY / innerHeight, 0.6)
+      if (ev) festejar(ev.clientX / innerWidth, ev.clientY / innerHeight, 0.6)
     } else sonar("swish")
     void elegirRespuesta(e.mia, id)
   }
+
+  // las piedras que diste vuelta (después de elegir, quedan las dos dadas vuelta)
+  const [giradas, setGiradas] = useState<string[]>([])
+  // en una ronda nueva, las piedras nuevas arrancan de frente
+  useEffect(() => setGiradas([]), [p.ronda])
+  const ambas = Boolean(e.mia && e.otra)
+  const giradaMia = Boolean(e.mia) && (e.fase === "esperando-eleccion" || giradas.includes("mia"))
+  const giradaOtra = ambas && (e.fase === "esperando-eleccion" || giradas.includes("otra"))
+  const girar = (cual: string) => {
+    vibrar(12)
+    sonar("swish")
+    setGiradas((g) => (g.includes(cual) ? g.filter((x) => x !== cual) : [...g, cual]))
+  }
+  const tocarMia = (ev?: React.MouseEvent) => {
+    if (!e.mia) return
+    if (ambas && giradaMia && e.mia.elige !== e.mia.id) elegir(e.mia.id, ev)
+    else if (!(ambas && giradaMia)) girar("mia")
+  }
+  const tocarOtra = (ev?: React.MouseEvent) => {
+    if (!e.otra) return
+    if (giradaOtra && e.mia?.elige !== e.otra.id) elegir(e.otra.id, ev)
+    else if (!giradaOtra) girar("otra")
+  }
+  const pista =
+    e.fase === "responder"
+      ? e.otroRespondio
+        ? `${nombreOtro} ya respondió: su piedra está despierta. Ahora vos.`
+        : "Las dos piedras duermen hasta que cada uno responda."
+      : e.fase === "esperando"
+        ? `Respondiste. La piedra de ${nombreOtro} sigue dormida.`
+        : e.fase === "elegir"
+          ? giradaMia && giradaOtra
+            ? "¿Cuál te copa más? Tocala de nuevo para elegirla."
+            : "¡Están las dos! Tocá las piedras para darlas vuelta."
+          : `Elegiste. Falta ${nombreOtro}.`
 
   const quien = p.creada_por ? `pregunta de ${nombre(p.creada_por)}` : "pregunta"
   const ronda = p.ronda > 1 ? ` · ronda ${p.ronda}` : ""
@@ -178,47 +212,54 @@ function TarjetaPregunta({ pregunta: p, e }: { pregunta: Pregunta; e: EstadoDeci
         </p>
       )}
 
-      {e.fase === "responder" && (
+      {e.fase !== "decidida" && e.fase !== "archivada" && (
         <>
-          <Estado mio={false} otro={e.otroRespondio} nombreOtro={nombreOtro} />
-          <form className="pregunta-responder" onSubmit={mandar}>
-            <input className="campo" placeholder="Tu respuesta, a ciegas…" value={texto} onChange={(ev) => setTexto(ev.target.value)} enterKeyHint="send" maxLength={300} />
-            <Boton type="submit" disabled={!texto.trim() || mandando}>
-              Listo
-            </Boton>
-          </form>
-        </>
-      )}
-
-      {e.fase === "esperando" && e.mia && (
-        <>
+          <p className="pregunta-pista">{pista}</p>
           <div className="decidir-opciones">
-            <Opcion r={e.mia} etiqueta="vos" color={color(e.mia.usuario)} />
-            <Tapada nombre={nombreOtro} />
+            <PiedraQueGira
+              semilla={semillaDe(`${p.id}${yo?.id}${p.ronda}`)}
+              color={color(yo?.id ?? "")}
+              dormida={!e.mia}
+              texto={e.mia?.texto}
+              girada={giradaMia}
+              etiqueta="vos"
+              marca={e.mia && e.mia.elige === e.mia.id ? <span className="opcion-marca">tu elegida</span> : undefined}
+              onTocar={tocarMia}
+              aria={e.mia ? (giradaMia ? `Tu respuesta: ${e.mia.texto}` : "Tu piedra: tocala para darla vuelta") : "Tu piedra, dormida: respondé abajo"}
+            />
+            <PiedraQueGira
+              semilla={semillaDe(`${p.id}${otro?.id}${p.ronda}`)}
+              color={color(otro?.id ?? "")}
+              dormida={!e.otroRespondio}
+              texto={e.otra?.texto}
+              girada={giradaOtra}
+              etiqueta={nombreOtro}
+              marca={e.mia && e.otra && e.mia.elige === e.otra.id ? <span className="opcion-marca">tu elegida</span> : undefined}
+              onTocar={tocarOtra}
+              aria={
+                e.otra
+                  ? giradaOtra
+                    ? `La respuesta de ${nombreOtro}: ${e.otra.texto}`
+                    : `La piedra de ${nombreOtro}: tocala para darla vuelta`
+                  : e.otroRespondio
+                    ? `${nombreOtro} ya respondió: se da vuelta cuando respondas`
+                    : `${nombreOtro} todavía no respondió`
+              }
+            />
           </div>
-          <Estado mio otro={false} nombreOtro={nombreOtro} />
-        </>
-      )}
-
-      {(e.fase === "elegir" || e.fase === "esperando-eleccion") && e.mia && e.otra && (
-        <>
-          <p className="pregunta-pista">{e.fase === "elegir" ? "¿Cuál te copa más?" : `Elegiste. Falta ${nombreOtro}.`}</p>
-          <div className="decidir-opciones">
-            {[e.mia, e.otra].map((r, i) => (
-              <Opcion
-                key={r.id}
-                r={r}
-                etiqueta={r.usuario === e.mia!.usuario ? "vos" : nombre(r.usuario)}
-                color={color(r.usuario)}
-                destape={i === 1}
-                elegida={e.mia!.elige === r.id}
-                onElegir={e.fase === "elegir" || e.mia!.elige !== r.id ? (ev) => elegir(r.id, ev) : undefined}
-              />
-            ))}
-          </div>
-          <button className={`pregunta-otra ${e.mia.elige === "otra" ? "elegida" : ""}`} onClick={(ev) => elegir("otra", ev)} aria-pressed={e.mia.elige === "otra"}>
-            🔁 Ninguna me tienta: otra ronda
-          </button>
+          {e.fase === "responder" && (
+            <form className="pregunta-responder" onSubmit={mandar}>
+              <input className="campo" placeholder="Tu respuesta, a ciegas…" value={texto} onChange={(ev) => setTexto(ev.target.value)} enterKeyHint="send" maxLength={300} />
+              <Boton type="submit" disabled={!texto.trim() || mandando}>
+                Listo
+              </Boton>
+            </form>
+          )}
+          {(e.fase === "elegir" || e.fase === "esperando-eleccion") && e.mia && (
+            <button className={`pregunta-otra ${e.mia.elige === "otra" ? "elegida" : ""}`} onClick={(ev) => elegir("otra", ev)} aria-pressed={e.mia.elige === "otra"}>
+              🔁 Ninguna me tienta: otra ronda
+            </button>
+          )}
         </>
       )}
 
@@ -238,72 +279,9 @@ function TarjetaPregunta({ pregunta: p, e }: { pregunta: Pregunta; e: EstadoDeci
   )
 }
 
-/** Quién respondió esta ronda (lo del otro, sin decir qué). */
-function Estado({ mio, otro, nombreOtro }: { mio: boolean; otro: boolean; nombreOtro: string }) {
-  return (
-    <p className="pregunta-estado">
-      {mio ? "Respondiste. " : ""}
-      {otro ? `${nombreOtro} ya respondió 🙈` : `${nombreOtro} todavía no respondió`}
-    </p>
-  )
-}
-
 /** Un número fijo por id, para que cada piedra tenga siempre la misma forma. */
 function semillaDe(id: string) {
   let n = 0
   for (const c of id) n = (n * 31 + c.charCodeAt(0)) % 997
   return n + 1
-}
-
-function Tapada({ nombre }: { nombre: string }) {
-  return (
-    <div className="opcion-piedra tapada" aria-label={`La respuesta de ${nombre}, tapada`}>
-      <Piedra semilla={7} ancho={160} alto={130}>
-        <span className="etiqueta">{nombre}</span>
-        <span className="piedra-texto">¿?</span>
-      </Piedra>
-    </div>
-  )
-}
-
-/** Una respuesta: una piedra con la respuesta pintada con aerosol, del color de quien la escribió. */
-function Opcion({
-  r,
-  etiqueta,
-  color,
-  destape = false,
-  elegida = false,
-  onElegir,
-}: {
-  r: Respuesta
-  etiqueta: string
-  color: string
-  destape?: boolean
-  elegida?: boolean
-  onElegir?: (ev: React.MouseEvent) => void
-}) {
-  const contenido = (
-    <>
-      {elegida && <Mancha color="var(--amarillo)" semilla={semillaDe(r.id)} className="opcion-mancha" />}
-      <Piedra semilla={semillaDe(r.id)} ancho={160} alto={130}>
-        <span className="etiqueta">{etiqueta}</span>
-        <Mancha color={color} semilla={semillaDe(r.id) + 3} className="piedra-mancha" />
-        <span className="piedra-texto">{r.texto}</span>
-      </Piedra>
-      {elegida && <span className="opcion-marca">tu elegida</span>}
-    </>
-  )
-  const clase = `opcion-piedra ${elegida ? "elegida" : ""}`
-  const quieto = useReducedMotion()
-  // la del otro se destapa con un giro corto (sin movimiento, si así lo pidió el teléfono)
-  const anim = destape && !quieto ? { initial: { rotateY: 90, opacity: 0 }, animate: { rotateY: 0, opacity: 1 }, transition: { duration: 0.35 } } : {}
-  return onElegir ? (
-    <motion.button className={clase} onClick={onElegir} aria-pressed={elegida} {...anim}>
-      {contenido}
-    </motion.button>
-  ) : (
-    <motion.div className={clase} {...anim}>
-      {contenido}
-    </motion.div>
-  )
 }

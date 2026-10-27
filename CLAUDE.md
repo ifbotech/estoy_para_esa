@@ -102,6 +102,9 @@ se carga con `require(`${__hooks}/util.js`)` adentro de cada handler.
   con respuestas a ciegas por rondas. La regla de `respuestas` esconde la del
   otro hasta que respondiste; la ronda, el desempate y lo decidido los pone
   el hook, nunca la app. Las fases salen de `estadoDecision` (calculos.ts).
+  Cada respuesta es una piedra con ojitos y grafiti (`componentes/Piedras.tsx`):
+  duerme hasta que esa persona responde y, con las dos, se da vuelta al
+  tocarla (y un segundo toque la elige). Lo decidido se apila en la pila.
 - `web/src/secciones/`: lo especial de cada personalidad (cine, lugar, viaje, taller).
   Todos los planes tienen la lista «Ideas» (se suma desde el plan o desde
   NuevoPlan en modo «Sumar a un plan»). Categorías: Cine en casa,
