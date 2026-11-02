@@ -25,6 +25,7 @@ function notificar(app, excepto, aviso) {
   } catch (err) {
     app.logger().warn("no se pudo mandar el aviso", "error", String(err))
   }
+  guardarNovedad(app, null, excepto, aviso)
 }
 
 /** Lo mismo, pero sólo a los teléfonos de `usuario`. */
@@ -33,6 +34,36 @@ function notificarA(app, usuario, aviso) {
     $epe.notificarA(usuario || "", JSON.stringify(aviso))
   } catch (err) {
     app.logger().warn("no se pudo mandar el aviso", "error", String(err))
+  }
+  guardarNovedad(app, usuario, "", aviso)
+}
+
+// Los recordatorios son para el momento: no van al panel de novedades.
+const SIN_NOVEDAD = /^(recordatorio|hoy|empujon)-/
+
+/**
+ * Guarda el aviso en `novedades` (el panel de la estrella) para `para` (un id)
+ * o, si es null, para todas las cuentas menos `excepto`. Nunca frena nada.
+ */
+function guardarNovedad(app, para, excepto, aviso) {
+  if (SIN_NOVEDAD.test(aviso.tag || "")) return
+  try {
+    const col = app.findCollectionByNameOrId("novedades")
+    const ids = para ? [para] : app.findAllRecords("users").map((u) => u.id).filter((id) => id !== excepto)
+    for (const id of ids) {
+      const r = new Record(col)
+      r.set("para", id)
+      if (excepto) r.set("de", excepto)
+      r.set("titulo", String(aviso.title || "").slice(0, 200))
+      r.set("cuerpo", String(aviso.body || "").slice(0, 500))
+      r.set("url", String(aviso.url || "").slice(0, 200))
+      r.set("tag", String(aviso.tag || "").slice(0, 120))
+      app.save(r)
+      // se guardan las últimas 150 de cada uno
+      for (const vieja of app.findRecordsByFilter("novedades", "para = {:p}", "-created", 50, 150, { p: id })) app.delete(vieja)
+    }
+  } catch (err) {
+    app.logger().warn("no se pudo guardar la novedad", "error", String(err))
   }
 }
 

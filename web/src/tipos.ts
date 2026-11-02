@@ -110,6 +110,17 @@ export interface Respuesta extends Base {
   elige: string
 }
 
+/** Una novedad del panel de la estrella: un aviso del servidor guardado para vos. */
+export interface Novedad extends Base {
+  para: string
+  de: string
+  titulo: string
+  cuerpo: string
+  url: string
+  tag: string
+  vista: boolean
+}
+
 /** Una línea del diario de la app (la anotan los hooks del servidor). */
 export interface Actividad {
   tipo:

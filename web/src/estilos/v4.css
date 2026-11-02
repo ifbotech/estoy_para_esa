@@ -145,3 +145,29 @@
   mask: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 40%22 preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3Cfilter id=%22a%22 x=%22-10%25%22 y=%22-60%25%22 width=%22120%25%22 height=%22220%25%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 seed=%224%22 result=%22g%22/%3E%3CfeDisplacementMap in=%22SourceGraphic%22 in2=%22g%22 scale=%224%22 xChannelSelector=%22R%22 yChannelSelector=%22G%22 result=%22b%22/%3E%3CfeMorphology in=%22SourceGraphic%22 operator=%22dilate%22 radius=%222%22 result=%22d%22/%3E%3CfeGaussianBlur in=%22d%22 stdDeviation=%224%22 result=%22n%22/%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%221.5%22 numOctaves=%221%22 seed=%229%22 result=%22r%22/%3E%3CfeColorMatrix in=%22r%22 type=%22matrix%22 values=%220 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 0 0 0 -5.2%22 result=%22m%22/%3E%3CfeComposite in=%22n%22 in2=%22m%22 operator=%22in%22 result=%22l%22/%3E%3CfeColorMatrix in=%22n%22 type=%22matrix%22 values=%221 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.25 0%22 result=%22v%22/%3E%3CfeMerge%3E%3CfeMergeNode in=%22v%22/%3E%3CfeMergeNode in=%22l%22/%3E%3CfeMergeNode in=%22b%22/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Cpath d=%22M10 22 C70 14 130 26 200 19 C270 12 330 24 390 17%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%2213%22 stroke-linecap=%22round%22 filter=%22url(%23a)%22/%3E%3Cpath d=%22M96 26 q2 8 0 11 q-2 2 -3 0 q-1 -5 3 -11Z M300 22 q2 6 0 9 q-2 2 -3 0 q-1 -4 3 -9Z%22 fill=%22%23000%22 filter=%22url(%23a)%22/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 .cabeza-pantalla { border-bottom: 0; margin-bottom: 30px; }
+
+/* --- novedades: la estrella de arriba y su panel (Novedades.tsx) ----------- */
+.boton-novedades { position: relative; display: grid; place-items: center; width: var(--toque); height: var(--toque); margin-right: -8px; transition: transform var(--rapido) ease-out; }
+.boton-novedades:active { transform: translate(1px, 2px) rotate(-12deg); }
+.estrella-novedades { width: 30px; height: 30px; overflow: visible; }
+.boton-novedades.con .estrella-novedades { rotate: 8deg; }
+.boton-novedades-num { position: absolute; top: 3px; right: 1px; min-width: 18px; height: 18px; display: grid; place-items: center; padding: 0 4px; border: 2px solid var(--tinta); border-radius: 9px 7px 10px 6px; background: var(--rojo); color: var(--superficie); font-size: 10px; font-weight: 700; line-height: 1; }
+/* en pantallas angostas, «en vivo» queda sólo como puntito para hacerle lugar */
+@media (max-width: 420px) { .barra-der .en-vivo { font-size: 0; gap: 0; } }
+
+.novedades { display: grid; gap: var(--gap-bloques); padding-bottom: 8px; }
+.novedades-vacio { padding: 14px; border: 2px dashed var(--rayita); border-radius: 12px 4px 14px 5px; color: var(--suave); font-size: 14.5px; }
+.novedades-dia, .novedades-app { display: grid; gap: 8px; }
+.novedades-dia ul, .novedades-app ul { display: grid; gap: 8px; }
+.novedad { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 12px; border: var(--borde); border-radius: 13px 5px 12px 4px / 5px 12px 4px 13px; background: var(--superficie); box-shadow: var(--sombra-chica); text-align: left; transition: transform var(--rapido) ease-out, box-shadow var(--rapido) ease-out; }
+.novedad:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--tinta); }
+.novedad.nueva { background: color-mix(in srgb, var(--amarillo) 38%, var(--superficie)); }
+.novedad-texto { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.novedad-texto b { font-size: 15px; line-height: 1.25; }
+.novedad-texto span { font-size: 13.5px; line-height: 1.3; color: var(--suave); overflow-wrap: anywhere; }
+.novedad-cuando { flex: none; padding-top: 2px; font-size: 10px; font-weight: 700; color: var(--suave); white-space: nowrap; }
+.novedad-app { display: grid; gap: 3px; width: 100%; padding: 10px 12px; border: 2px dashed var(--tinta); border-radius: 5px 13px 4px 12px / 12px 4px 13px 5px; text-align: left; }
+.novedad-app.nueva { border-style: solid; background: color-mix(in srgb, var(--lila) 45%, var(--superficie)); }
+.novedad-app:disabled { cursor: default; opacity: 1; color: inherit; }
+.novedad-app b { font-size: 15px; }
+.novedad-app span { font-size: 13.5px; line-height: 1.35; }

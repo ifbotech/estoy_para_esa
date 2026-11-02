@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react"
 import { pb } from "./pb"
 import { desactivarPush } from "./util/push"
-import type { Categoria, Item, Lista, Plan, Pregunta, Respuesta, Usuario, Voto } from "./tipos"
+import type { Categoria, Item, Lista, Novedad, Plan, Pregunta, Respuesta, Usuario, Voto } from "./tipos"
 import { avisar } from "./componentes/Avisos"
 
 /**
@@ -19,6 +19,7 @@ export interface Estado {
   items: Item[]
   preguntas: Pregunta[]
   respuestas: Respuesta[]
+  novedades: Novedad[]
 }
 
 const inicial: Estado = {
@@ -31,6 +32,7 @@ const inicial: Estado = {
   items: [],
   preguntas: [],
   respuestas: [],
+  novedades: [],
 }
 
 let estado = inicial
@@ -58,7 +60,7 @@ export function useStore<T>(sel: (s: Estado) => T): T {
 
 // La colección `temas` sigue en la base para las versiones archivadas, pero
 // la app actual tiene un diseño fijo y ya no la carga.
-type Coleccion = "usuarios" | "categorias" | "planes" | "votos" | "items" | "preguntas" | "respuestas"
+type Coleccion = "usuarios" | "categorias" | "planes" | "votos" | "items" | "preguntas" | "respuestas" | "novedades"
 const NOMBRES: Record<Coleccion, string> = {
   usuarios: "users",
   categorias: "categorias",
@@ -67,6 +69,7 @@ const NOMBRES: Record<Coleccion, string> = {
   items: "items",
   preguntas: "preguntas",
   respuestas: "respuestas",
+  novedades: "novedades",
 }
 const ORDEN: Record<Coleccion, string> = {
   usuarios: "name",
@@ -76,6 +79,7 @@ const ORDEN: Record<Coleccion, string> = {
   items: "orden",
   preguntas: "-created",
   respuestas: "created",
+  novedades: "-created",
 }
 
 // --- cambios propios pendientes (UI optimista + debounce) -----------------
@@ -155,7 +159,7 @@ function aplicar(clave: Coleccion, accion: string, rec: { id: string }, remoto =
     return
   }
   const i = lista.findIndex((r) => r.id === rec.id)
-  const nueva = i >= 0 ? lista.map((r, j) => (j === i ? rec : r)) : clave === "planes" || clave === "preguntas" ? [rec, ...lista] : [...lista, rec]
+  const nueva = i >= 0 ? lista.map((r, j) => (j === i ? rec : r)) : clave === "planes" || clave === "preguntas" || clave === "novedades" ? [rec, ...lista] : [...lista, rec]
   if (clave === "categorias") (nueva as Categoria[]).sort((a, b) => a.orden - b.orden)
   if (clave === "items") (nueva as Item[]).sort((a, b) => a.orden - b.orden)
   set({ [clave]: nueva } as Partial<Estado>)
@@ -423,4 +427,13 @@ export async function borrarPregunta(id: string) {
     aplicar("preguntas", "delete", { id })
     set({ respuestas: estado.respuestas.filter((r) => r.pregunta !== id) })
   }
+}
+
+// --- novedades (el panel de la estrella) ------------------------------------
+
+/** Marca como vistas las novedades que todavía no lo estaban. */
+export async function marcarNovedadesVistas(ids: string[]) {
+  if (!ids.length) return
+  set({ novedades: estado.novedades.map((n) => (ids.includes(n.id) ? { ...n, vista: true } : n)) })
+  await Promise.all(ids.map((id) => pb.collection("novedades").update(id, { vista: true }).catch(() => {})))
 }
