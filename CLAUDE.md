@@ -126,4 +126,9 @@ se carga con `require(`${__hooks}/util.js`)` adentro de cada handler.
   NuevoPlan en modo «Sumar a un plan»). Categorías: Cine en casa,
   Gastronomía, Viajes, DIY y Plancitos.
 - `web/src/componentes/Arte.tsx` + `estilos/arte.css`: los dibujos con CSS.
+- **Novedades** (`componentes/Novedades.tsx`): la estrella de arriba. Cada
+  `notificar`/`notificarA` de `pb_hooks/util.js` también guarda el aviso en
+  `novedades` para cada destinatario (menos los recordatorios; se guardan
+  las últimas 150). Cuando sumes algo que el otro tenga que saber, agregá
+  una entrada arriba en `web/src/novedadesApp.ts`.
 - `server/`: PocketBase + `$epe.webpush` para los hooks + comando `usuario`.

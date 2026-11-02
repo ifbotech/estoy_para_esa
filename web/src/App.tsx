@@ -4,6 +4,7 @@ import { Avisos, avisar } from "./componentes/Avisos"
 import { BarraNav } from "./componentes/BarraNav"
 import { EnVivo } from "./componentes/Deco"
 import { Globos } from "./componentes/Globos"
+import { BotonNovedades } from "./componentes/Novedades"
 import { NuevoPlan, type ModoNuevo } from "./pantallas/NuevoPlan"
 import { VistaRapida } from "./componentes/VistaRapida"
 import { Login } from "./pantallas/Login"
@@ -205,6 +206,7 @@ function BarraSuperior({ seccion, sub }: { seccion: string; sub?: string }) {
         <span className="barra-chip num" title="Planes que ya hicieron juntos">
           {hechos} {hechos === 1 ? "hecho" : "hechos"}
         </span>
+        <BotonNovedades />
       </div>
     </header>
   )
