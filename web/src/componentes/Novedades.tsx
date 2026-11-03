@@ -10,9 +10,9 @@ import { Hoja } from "./Controles"
 /**
  * Las novedades: una estrella de seis picos desparejos arriba a la derecha.
  * Se pone amarilla y con el número cuando hay algo sin ver; tocarla abre el
- * panel: arriba, «nuevo en estoy para esa» (las mejoras que cada uno le hizo a
- * la app) y abajo todo lo que hizo cada uno en las últimas 48 horas (los
- * avisos del servidor, guardados aunque no tengas push).
+ * panel: arriba, todo lo que hizo cada uno en las últimas 48 horas (los
+ * avisos del servidor, guardados aunque no tengas push) y abajo «nuevo en
+ * estoy para esa» (las mejoras que cada uno le hizo a la app).
  */
 
 /** La estrella: seis picos de largo y ángulo distinto, con las puntas blandas. */
@@ -158,28 +158,6 @@ function Panel({ novedades, vistos, onVer, onIr }: { novedades: Novedad[]; visto
 
   return (
     <div className="novedades">
-      {CAMBIOS_RECIENTES.length > 0 && (
-        <section className="novedades-app">
-          <h3 className="etiqueta">nuevo en estoy para esa</h3>
-          <ul>
-            {visibles.map((c) => (
-              <li key={c.id} className={`cambio ${cambiosNuevos.current.has(c.id) ? "nueva" : ""}`}>
-                <span className="cambio-quien">
-                  <b>{c.quien}</b> mejoró la app
-                </span>
-                <span className="cambio-titulo">{c.titulo}</span>
-                <span className="cambio-cuando num">{cuando(c.fecha)}</span>
-              </li>
-            ))}
-          </ul>
-          {visibles.length < CAMBIOS_RECIENTES.length && (
-            <button className="link-sutil" onClick={() => setTodos(true)}>
-              ver las anteriores ({CAMBIOS_RECIENTES.length - visibles.length})
-            </button>
-          )}
-        </section>
-      )}
-
       <section className="novedades-recientes">
         <h3 className="etiqueta">novedades · últimas 48 h</h3>
         {!novedades.length && <p className="novedades-vacio">Nada en las últimas 48 horas. Acá aparece todo lo que hagan vos y {otro?.name ?? "el otro"}: planes, ganas, ideas, decisiones…</p>}
@@ -211,6 +189,27 @@ function Panel({ novedades, vistos, onVer, onIr }: { novedades: Novedad[]; visto
           </div>
         ))}
       </section>
+      {CAMBIOS_RECIENTES.length > 0 && (
+        <section className="novedades-app">
+          <h3 className="etiqueta">nuevo en estoy para esa</h3>
+          <ul>
+            {visibles.map((c) => (
+              <li key={c.id} className={`cambio ${cambiosNuevos.current.has(c.id) ? "nueva" : ""}`}>
+                <span className="cambio-quien">
+                  <b>{c.quien}</b> mejoró la app
+                </span>
+                <span className="cambio-titulo">{c.titulo}</span>
+                <span className="cambio-cuando num">{cuando(c.fecha)}</span>
+              </li>
+            ))}
+          </ul>
+          {visibles.length < CAMBIOS_RECIENTES.length && (
+            <button className="link-sutil" onClick={() => setTodos(true)}>
+              ver las anteriores ({CAMBIOS_RECIENTES.length - visibles.length})
+            </button>
+          )}
+        </section>
+      )}
     </div>
   )
 }

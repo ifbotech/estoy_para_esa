@@ -126,11 +126,11 @@ se carga con `require(`${__hooks}/util.js`)` adentro de cada handler.
   NuevoPlan en modo «Sumar a un plan»). Categorías: Cine en casa,
   Gastronomía, Viajes, DIY y Plancitos.
 - `web/src/componentes/Arte.tsx` + `estilos/arte.css`: los dibujos con CSS.
-- **Novedades** (`componentes/Novedades.tsx`): la estrella de arriba. Arriba
+- **Novedades** (`componentes/Novedades.tsx`): la estrella de arriba. Abajo
   del panel, «nuevo en estoy para esa»: las mejoras a la app, que se arman
   solas en el build con los PR mergeados a main (`cambiosPublicados` en
   `vite.config.ts`: título del PR, quién por su rama, fecha); por eso el
-  título del PR tiene que contar la mejora. Abajo, todo lo que hizo cada uno
+  título del PR tiene que contar la mejora. Arriba, todo lo que hizo cada uno
   en las últimas 48 h: cada `notificar`/`notificarA` de `pb_hooks/util.js`
   guarda el aviso en `novedades` para todos (a quien lo hizo, ya visto);
   los recordatorios no entran y a las 48 h se borran del panel.
