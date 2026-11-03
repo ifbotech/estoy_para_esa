@@ -41,25 +41,34 @@ function notificarA(app, usuario, aviso) {
 // Los recordatorios son para el momento: no van al panel de novedades.
 const SIN_NOVEDAD = /^(recordatorio|hoy|empujon)-/
 
+// Una novedad es novedad por 48 horas: después se borra del panel (lo que
+// cuenta, el plan, el voto o la decisión, queda en la app).
+const VIDA_NOVEDAD = 48 * 3600 * 1000
+
 /**
  * Guarda el aviso en `novedades` (el panel de la estrella) para `para` (un id)
- * o, si es null, para todas las cuentas menos `excepto`. Nunca frena nada.
+ * o, si es null, para todas las cuentas: a los demás como no vista y a quien
+ * lo hizo (`excepto`) como vista, así cada uno ve todo lo que hizo cada uno.
+ * Nunca frena nada.
  */
 function guardarNovedad(app, para, excepto, aviso) {
   if (SIN_NOVEDAD.test(aviso.tag || "")) return
   try {
     const col = app.findCollectionByNameOrId("novedades")
-    const ids = para ? [para] : app.findAllRecords("users").map((u) => u.id).filter((id) => id !== excepto)
+    const ids = para ? [para] : app.findAllRecords("users").map((u) => u.id)
+    const vencida = new Date(Date.now() - VIDA_NOVEDAD).toISOString().replace("T", " ")
     for (const id of ids) {
       const r = new Record(col)
       r.set("para", id)
       if (excepto) r.set("de", excepto)
+      r.set("vista", Boolean(excepto) && id === excepto)
       r.set("titulo", String(aviso.title || "").slice(0, 200))
       r.set("cuerpo", String(aviso.body || "").slice(0, 500))
       r.set("url", String(aviso.url || "").slice(0, 200))
       r.set("tag", String(aviso.tag || "").slice(0, 120))
       app.save(r)
-      // se guardan las últimas 150 de cada uno
+      // fuera las de más de 48 horas, y nunca más de 150 por persona
+      for (const vieja of app.findRecordsByFilter("novedades", "para = {:p} && created < {:v}", "", 100, 0, { p: id, v: vencida })) app.delete(vieja)
       for (const vieja of app.findRecordsByFilter("novedades", "para = {:p}", "-created", 50, 150, { p: id })) app.delete(vieja)
     }
   } catch (err) {
