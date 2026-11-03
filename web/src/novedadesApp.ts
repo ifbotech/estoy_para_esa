@@ -1,60 +1,40 @@
 /**
- * «Nuevo en la app»: lo que se sumó a la app, para el panel de novedades (la
- * estrella de arriba). La más nueva primero. Cuando sumes algo que el otro
- * tenga que saber, agregá una entrada arriba con un `id` nuevo: aparece como
- * no vista hasta que la abra.
+ * «Nuevo en estoy para esa»: las mejoras que cada uno le hizo a la app, para
+ * el panel de novedades (la estrella de arriba). Se arma sola en cada build
+ * con los PR que llegaron a main (ver `cambiosPublicados` en vite.config.ts):
+ * el título del PR, quién lo hizo (su rama) y cuándo. La más nueva primero.
+ * Una mejora queda como no vista hasta que la abras.
  */
-export interface NovedadApp {
+export interface CambioApp {
+  /** el número del PR */
   id: string
   fecha: string
+  quien: string
   titulo: string
-  texto: string
-  url?: string
 }
 
-export const NOVEDADES_APP: NovedadApp[] = [
-  {
-    id: "novedades",
-    fecha: "2026-11-02",
-    titulo: "✶ Novedades",
-    texto: "Esta estrella: lo que hizo el otro mientras no mirabas, aunque no tengas los avisos del teléfono activados.",
-  },
-  {
-    id: "piedras",
-    fecha: "2026-10-27",
-    titulo: "🪨 Decidir con piedras",
-    texto: "Cada respuesta es una piedra con ojitos: duerme hasta que esa persona responde y, con las dos, se da vuelta al tocarla.",
-    url: "#/decidir",
-  },
-  {
-    id: "decidir",
-    fecha: "2026-10-27",
-    titulo: "🪧 Decidir",
-    texto: "Uno pregunta, cada uno responde a ciegas y eligen la que más les copa. Si ninguna tienta, otra ronda.",
-    url: "#/decidir",
-  },
-  {
-    id: "ideas",
-    fecha: "2026-10-26",
-    titulo: "💡 Ideas para cada plan",
-    texto: "Todos los planes, viajes incluidos, tienen una lista de ideas que se va armando de a poco.",
-    url: "#/planes",
-  },
-]
+declare const __CAMBIOS__: CambioApp[]
 
-const CLAVE = "epe-novedades-app-vistas"
+export const CAMBIOS_APP: CambioApp[] = typeof __CAMBIOS__ === "undefined" ? [] : __CAMBIOS__
 
-export function novedadesAppVistas(): string[] {
+/** Las que se muestran en el panel. */
+export const CAMBIOS_RECIENTES = CAMBIOS_APP.slice(0, 8)
+
+const CLAVE = "epe-cambios-vistos"
+
+export function cambiosVistos(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(CLAVE) || "[]")
+    const guardado = localStorage.getItem(CLAVE)
+    // la primera vez, sólo cuenta como nueva la última mejora
+    return guardado ? JSON.parse(guardado) : CAMBIOS_APP.slice(1).map((c) => c.id)
   } catch {
-    return NOVEDADES_APP.map((n) => n.id)
+    return CAMBIOS_APP.map((c) => c.id)
   }
 }
 
-export function marcarNovedadesAppVistas() {
+export function marcarCambiosVistos() {
   try {
-    localStorage.setItem(CLAVE, JSON.stringify(NOVEDADES_APP.map((n) => n.id)))
+    localStorage.setItem(CLAVE, JSON.stringify(CAMBIOS_APP.map((c) => c.id)))
   } catch {
     // sin almacenamiento: quedan como vistas sólo por esta vez
   }

@@ -1,6 +1,33 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import { VitePWA } from "vite-plugin-pwa"
+import { execSync } from "node:child_process"
+
+// «Nuevo en estoy para esa» (el panel de novedades): cada PR que llegó a main,
+// con quién lo hizo (la rama) y cuándo. Sale de git en cada build, así se
+// actualiza solo con cada publicación. Sin historial (o sin git) queda vacío.
+const QUIENES: Record<string, string> = { rocio: "Rocío", inaki: "Iñaki" }
+function cambiosPublicados() {
+  try {
+    const salida = execSync("git log origin/main --merges --first-parent -n 40 --format=%cI%x1f%s%x1f%b%x1e", {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+    return salida
+      .split("\x1e")
+      .map((r) => r.trim())
+      .filter(Boolean)
+      .flatMap((r) => {
+        const [fecha, asunto, cuerpo] = r.split("\x1f")
+        const m = /Merge pull request #(\d+) from [^/]+\/(\S+)/.exec(asunto)
+        if (!m) return []
+        const titulo = (cuerpo || "").trim().split("\n")[0]
+        return [{ id: m[1], fecha, quien: QUIENES[m[2]] ?? m[2], titulo: titulo || asunto }]
+      })
+  } catch {
+    return []
+  }
+}
 
 // La app vive en ifbotech.com/estoyparaesa/ y cada versión vieja queda en
 // /estoyparaesa/archivo/<id>/: con base relativa y rutas con # el mismo build
@@ -8,6 +35,9 @@ import { VitePWA } from "vite-plugin-pwa"
 export default defineConfig({
   root: "web",
   base: "./",
+  define: {
+    __CAMBIOS__: JSON.stringify(cambiosPublicados()),
+  },
   build: {
     outDir: "../dist",
     emptyOutDir: true,

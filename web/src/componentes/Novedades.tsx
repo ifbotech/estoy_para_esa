@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { fecha } from "../calculos"
-import { NOVEDADES_APP, marcarNovedadesAppVistas, novedadesAppVistas } from "../novedadesApp"
+import { CAMBIOS_RECIENTES, cambiosVistos, marcarCambiosVistos } from "../novedadesApp"
 import { ir } from "../router"
 import { marcarNovedadesVistas, useStore, useYo } from "../store"
 import type { Novedad } from "../tipos"
@@ -10,8 +10,9 @@ import { Hoja } from "./Controles"
 /**
  * Las novedades: una estrella de seis picos desparejos arriba a la derecha.
  * Se pone amarilla y con el número cuando hay algo sin ver; tocarla abre el
- * panel con lo que hizo el otro (los avisos del servidor, guardados aunque no
- * tengas push) y lo nuevo en la app.
+ * panel: arriba, «nuevo en estoy para esa» (las mejoras que cada uno le hizo a
+ * la app) y abajo todo lo que hizo cada uno en las últimas 48 horas (los
+ * avisos del servidor, guardados aunque no tengas push).
  */
 
 /** La estrella: seis picos de largo y ángulo distinto, con las puntas blandas. */
@@ -58,18 +59,29 @@ function cuando(s: string, ahora = new Date()) {
   if (min < 60 * 12) return `hace ${Math.round(min / 60)} h`
   const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime()
   const dia = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-  const hora = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })
+  const hora = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false })
   if (dia === hoy) return `hoy ${hora}`
   if (hoy - dia === 86400000) return `ayer ${hora}`
   return d.toLocaleDateString("es-AR", { day: "numeric", month: "short" }).replace(".", "")
 }
 
+// Una novedad es novedad por 48 horas (el servidor también las borra).
+const VIDA = 48 * 3600 * 1000
+
+function vigentes(novedades: Novedad[], ahora = Date.now()) {
+  return novedades.filter((n) => {
+    const d = fecha(n.created)
+    return d && ahora - d.getTime() < VIDA
+  })
+}
+
 /** El botón de la barra de arriba, con su panel. */
 export function BotonNovedades() {
-  const novedades = useStore((s) => s.novedades)
+  const todas = useStore((s) => s.novedades)
+  const novedades = useMemo(() => vigentes(todas), [todas])
   const [abierta, setAbierta] = useState(false)
-  const [appVistas, setAppVistas] = useState(novedadesAppVistas)
-  const sinVer = novedades.filter((n) => !n.vista).length + NOVEDADES_APP.filter((n) => !appVistas.includes(n.id)).length
+  const [vistos, setVistos] = useState(cambiosVistos)
+  const sinVer = novedades.filter((n) => !n.vista).length + CAMBIOS_RECIENTES.filter((c) => !vistos.includes(c.id)).length
 
   return (
     <>
@@ -88,10 +100,10 @@ export function BotonNovedades() {
         {abierta && (
           <Panel
             novedades={novedades}
-            appVistas={appVistas}
+            vistos={vistos}
             onVer={() => {
-              marcarNovedadesAppVistas()
-              setAppVistas(novedadesAppVistas())
+              marcarCambiosVistos()
+              setVistos(cambiosVistos())
             }}
             onIr={(url) => {
               setAbierta(false)
@@ -104,13 +116,23 @@ export function BotonNovedades() {
   )
 }
 
-function Panel({ novedades, appVistas, onVer, onIr }: { novedades: Novedad[]; appVistas: string[]; onVer: () => void; onIr: (url?: string) => void }) {
+/** Lo que va entre «comillas» en un aviso: casi siempre el plan o la pregunta. */
+function deQue(n: Novedad) {
+  const m = /«([^»]+)»/.exec(n.cuerpo) ?? /«([^»]+)»/.exec(n.titulo)
+  return m ? m[1] : ""
+}
+
+function Panel({ novedades, vistos, onVer, onIr }: { novedades: Novedad[]; vistos: string[]; onVer: () => void; onIr: (url?: string) => void }) {
   const usuarios = useStore((s) => s.usuarios)
   const yo = useYo()
   const otro = usuarios.find((u) => u.id !== yo?.id)
+  const quien = (id: string) => usuarios.find((u) => u.id === id)
   // lo que estaba sin ver al abrir queda marcado como «nuevo» mientras el panel está abierto
   const nuevas = useRef(new Set(novedades.filter((n) => !n.vista).map((n) => n.id)))
-  const nuevasApp = useRef(new Set(NOVEDADES_APP.filter((n) => !appVistas.includes(n.id)).map((n) => n.id)))
+  const cambiosNuevos = useRef(new Set(CAMBIOS_RECIENTES.filter((c) => !vistos.includes(c.id)).map((c) => c.id)))
+  // las 3 últimas mejoras (o todas las que no viste) y el resto a un toque
+  const [todos, setTodos] = useState(false)
+  const visibles = todos ? CAMBIOS_RECIENTES : CAMBIOS_RECIENTES.slice(0, Math.max(3, cambiosNuevos.current.size))
   useEffect(() => {
     const t = setTimeout(() => {
       void marcarNovedadesVistas([...nuevas.current])
@@ -122,11 +144,11 @@ function Panel({ novedades, appVistas, onVer, onIr }: { novedades: Novedad[]; ap
   const grupos = useMemo(() => {
     const g: { dia: string; items: Novedad[] }[] = []
     const ahora = new Date()
-    for (const n of novedades.slice(0, 60)) {
+    const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime()
+    for (const n of novedades) {
       const d = fecha(n.created)
-      const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime()
       const dia = d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() : 0
-      const nombre = dia === hoy ? "hoy" : hoy - dia === 86400000 ? "ayer" : d ? d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }) : ""
+      const nombre = dia === hoy ? "hoy" : hoy - dia === 86400000 ? "ayer" : d ? d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric" }) : ""
       const ultimo = g[g.length - 1]
       if (ultimo && ultimo.dia === nombre) ultimo.items.push(n)
       else g.push({ dia: nombre, items: [n] })
@@ -136,40 +158,58 @@ function Panel({ novedades, appVistas, onVer, onIr }: { novedades: Novedad[]; ap
 
   return (
     <div className="novedades">
-      {!novedades.length && (
-        <p className="novedades-vacio">Todavía nada. Acá va a aparecer lo que haga {otro?.name ?? "el otro"}: planes nuevos, ganas, decisiones…</p>
-      )}
-      {grupos.map((g) => (
-        <section key={g.dia} className="novedades-dia">
-          <h3 className="etiqueta">{g.dia}</h3>
+      {CAMBIOS_RECIENTES.length > 0 && (
+        <section className="novedades-app">
+          <h3 className="etiqueta">nuevo en estoy para esa</h3>
           <ul>
-            {g.items.map((n) => (
-              <li key={n.id}>
-                <button className={`novedad ${nuevas.current.has(n.id) ? "nueva" : ""}`} onClick={() => onIr(n.url)}>
-                  <span className="novedad-texto">
-                    <b>{n.titulo}</b>
-                    {n.cuerpo && <span>{n.cuerpo}</span>}
-                  </span>
-                  <span className="novedad-cuando num">{cuando(n.created)}</span>
-                </button>
+            {visibles.map((c) => (
+              <li key={c.id} className={`cambio ${cambiosNuevos.current.has(c.id) ? "nueva" : ""}`}>
+                <span className="cambio-quien">
+                  <b>{c.quien}</b> mejoró la app
+                </span>
+                <span className="cambio-titulo">{c.titulo}</span>
+                <span className="cambio-cuando num">{cuando(c.fecha)}</span>
               </li>
             ))}
           </ul>
+          {visibles.length < CAMBIOS_RECIENTES.length && (
+            <button className="link-sutil" onClick={() => setTodos(true)}>
+              ver las anteriores ({CAMBIOS_RECIENTES.length - visibles.length})
+            </button>
+          )}
         </section>
-      ))}
+      )}
 
-      <section className="novedades-app">
-        <h3 className="etiqueta">nuevo en la app</h3>
-        <ul>
-          {NOVEDADES_APP.map((n) => (
-            <li key={n.id}>
-              <button className={`novedad-app ${nuevasApp.current.has(n.id) ? "nueva" : ""}`} onClick={() => onIr(n.url)} disabled={!n.url}>
-                <b>{n.titulo}</b>
-                <span>{n.texto}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+      <section className="novedades-recientes">
+        <h3 className="etiqueta">novedades · últimas 48 h</h3>
+        {!novedades.length && <p className="novedades-vacio">Nada en las últimas 48 horas. Acá aparece todo lo que hagan vos y {otro?.name ?? "el otro"}: planes, ganas, ideas, decisiones…</p>}
+        {grupos.map((g) => (
+          <div key={g.dia} className="novedades-dia">
+            <h4 className="etiqueta">{g.dia}</h4>
+            <ul>
+              {g.items.map((n) => {
+                const mia = Boolean(n.de) && n.de === yo?.id
+                const autor = n.de ? quien(n.de) : undefined
+                const que = deQue(n)
+                return (
+                  <li key={n.id}>
+                    <button className={`novedad ${nuevas.current.has(n.id) ? "nueva" : ""} ${mia ? "mia" : ""}`} onClick={() => onIr(n.url)}>
+                      <span className="novedad-autor num" style={{ background: autor?.color || "var(--papel)" } as React.CSSProperties} title={mia ? "vos" : autor?.name}>
+                        {mia ? "vos" : (autor?.name ?? "✶").slice(0, 1)}
+                      </span>
+                      <span className="novedad-texto">
+                        <b>{n.titulo}</b>
+                        {/* lo propio se cuenta corto: el aviso estaba escrito para el otro */}
+                        {mia ? que && <span>«{que}»</span> : n.cuerpo && <span>{n.cuerpo}</span>}
+                      </span>
+                      <span className="novedad-cuando num">{cuando(n.created)}</span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        ))}
       </section>
     </div>
   )

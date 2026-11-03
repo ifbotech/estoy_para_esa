@@ -126,9 +126,12 @@ se carga con `require(`${__hooks}/util.js`)` adentro de cada handler.
   NuevoPlan en modo «Sumar a un plan»). Categorías: Cine en casa,
   Gastronomía, Viajes, DIY y Plancitos.
 - `web/src/componentes/Arte.tsx` + `estilos/arte.css`: los dibujos con CSS.
-- **Novedades** (`componentes/Novedades.tsx`): la estrella de arriba. Cada
-  `notificar`/`notificarA` de `pb_hooks/util.js` también guarda el aviso en
-  `novedades` para cada destinatario (menos los recordatorios; se guardan
-  las últimas 150). Cuando sumes algo que el otro tenga que saber, agregá
-  una entrada arriba en `web/src/novedadesApp.ts`.
+- **Novedades** (`componentes/Novedades.tsx`): la estrella de arriba. Arriba
+  del panel, «nuevo en estoy para esa»: las mejoras a la app, que se arman
+  solas en el build con los PR mergeados a main (`cambiosPublicados` en
+  `vite.config.ts`: título del PR, quién por su rama, fecha); por eso el
+  título del PR tiene que contar la mejora. Abajo, todo lo que hizo cada uno
+  en las últimas 48 h: cada `notificar`/`notificarA` de `pb_hooks/util.js`
+  guarda el aviso en `novedades` para todos (a quien lo hizo, ya visto);
+  los recordatorios no entran y a las 48 h se borran del panel.
 - `server/`: PocketBase + `$epe.webpush` para los hooks + comando `usuario`.
